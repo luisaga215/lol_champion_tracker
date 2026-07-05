@@ -1,0 +1,22 @@
+{
+  "name": "lol-arena-tracker",
+  "version": "1.0.0",
+  "description": "League of Legends Arena Champion Tracker",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "jest src/server.test.js --runInBand --detectOpenHandles"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}

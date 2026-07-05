@@ -1,0 +1,13 @@
+services:
+  arena-tracker:
+    build: .
+    container_name: lol-arena-tracker
+    ports:
+      - "3000:3000"
+    volumes:
+      - arena-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  arena-data:
+    name: lol-arena-data

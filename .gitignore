@@ -1,0 +1,13 @@
+# Dependency directories
+node_modules/
+
+# Local database and cached champion images
+data/
+
+# Environment files
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db

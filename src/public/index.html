@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Arena Champion Tracker</title>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="arena-tag">ARENA</span>
+                <h1>CHAMPION TRACKER</h1>
+            </div>
+            <p class="subtitle">Track your progress toward completing all champions in League of Legends Arena mode.</p>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <section class="stats-dashboard" id="stats-dashboard">
+            <div class="stat-card total-champs">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Total Champions</div>
+            </div>
+            <div class="stat-card tier-played">
+                <div class="stat-header">
+                    <span class="stat-label">Played</span>
+                    <span class="stat-fraction" id="fraction-played">0/0</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="bar-played" style="width: 0%"></div>
+                </div>
+                <div class="stat-percentage" id="pct-played">0%</div>
+            </div>
+            <div class="stat-card tier-top4">
+                <div class="stat-header">
+                    <span class="stat-label">Top 4 Spots</span>
+                    <span class="stat-fraction" id="fraction-top4">0/0</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="bar-top4" style="width: 0%"></div>
+                </div>
+                <div class="stat-percentage" id="pct-top4">0%</div>
+            </div>
+            <div class="stat-card tier-won">
+                <div class="stat-header">
+                    <span class="stat-label">1st Place Wins</span>
+                    <span class="stat-fraction" id="fraction-won">0/0</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="bar-won" style="width: 0%"></div>
+                </div>
+                <div class="stat-percentage" id="pct-won">0%</div>
+            </div>
+        </section>
+
+        <!-- Controls Section (Filters, Search, Sort) -->
+        <section class="controls-panel">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="search-input" placeholder="Search champion..." autocomplete="off">
+                <button id="clear-search" class="clear-search-btn" title="Clear Search">&times;</button>
+            </div>
+
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="unplayed">Not Played</button>
+                <button class="filter-btn" data-filter="played">Played</button>
+                <button class="filter-btn" data-filter="top4">Top 4</button>
+                <button class="filter-btn" data-filter="won">Won (1st)</button>
+                <button class="filter-btn" data-filter="missing-top4">Need Top 4</button>
+                <button class="filter-btn" data-filter="missing-won">Need Won</button>
+            </div>
+
+            <div class="sort-group">
+                <label for="sort-select">Sort By</label>
+                <select id="sort-select">
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="status-desc">Highest Progress</option>
+                    <option value="status-asc">Lowest Progress</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Main Champion Grid -->
+        <main class="champions-grid-container">
+            <div class="champions-grid" id="champions-grid">
+                <!-- Loading State -->
+                <div class="loading-state" id="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading Champions Database...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Legend / Footer -->
+        <footer class="app-footer">
+            <div class="legend">
+                <div class="legend-item"><span class="legend-badge p-badge">P</span> Played (Bronze)</div>
+                <div class="legend-item"><span class="legend-badge t-badge">T</span> Top 4 (Teal/Silver)</div>
+                <div class="legend-item"><span class="legend-badge w-badge">W</span> Won 1st Place (Gold/Pink)</div>
+            </div>
+            <p class="copyright">&copy; 2026 Arena Tracker. League of Legends champion data and images are property of Riot Games.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

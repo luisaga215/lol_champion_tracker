@@ -1,0 +1,698 @@
+/* Modern CSS Variables & Design System */
+:root {
+    --bg-main: #07080c;
+    --bg-panel: #0e111a;
+    --bg-card: rgba(27, 31, 46, 0.7);
+    --bg-card-hover: rgba(35, 41, 61, 0.9);
+    
+    --border-color: rgba(45, 53, 76, 0.5);
+    --border-hover: rgba(0, 235, 212, 0.4);
+    
+    --text-primary: #f0f3f8;
+    --text-secondary: #8c97ac;
+    --text-muted: #576275;
+    
+    /* Arena Achievement Colors */
+    --color-played: #cd7f32; /* Bronze */
+    --color-top4: #00ebd4;   /* Platinum/Teal */
+    --color-won: #f39c12;    /* Gold */
+    --color-won-glow: rgba(243, 156, 18, 0.5);
+    --color-won-gradient: linear-gradient(135deg, #f39c12, #ff007f);
+    
+    /* Status Section Backgrounds (Unselected) */
+    --status-bg: rgba(14, 17, 26, 0.6);
+    
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.7);
+    
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    /* Hextech style subtle mesh background */
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(191, 85, 236, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(0, 235, 212, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+.app-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Header styling */
+.app-header {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.logo-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.arena-tag {
+    background: var(--color-won-gradient);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
+    animation: tag-pulse 2s infinite ease-in-out;
+}
+
+.app-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    background: linear-gradient(180deg, #ffffff 30%, #a4b3d6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    font-weight: 300;
+}
+
+/* Stats Dashboard */
+.stats-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.stat-card {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-normal), border-color var(--transition-normal);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Glassmorphism subtle inner glow */
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+}
+
+.stat-fraction {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.1, 0.8, 0.2, 1);
+}
+
+#bar-played {
+    background-color: var(--color-played);
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.3);
+}
+
+#bar-top4 {
+    background-color: var(--color-top4);
+    box-shadow: 0 0 8px rgba(0, 235, 212, 0.3);
+}
+
+#bar-won {
+    background: var(--color-won-gradient);
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.3);
+}
+
+.stat-percentage {
+    align-self: flex-end;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Controls Panel */
+.controls-panel {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.search-box {
+    flex: 1 1 250px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color var(--transition-fast);
+}
+
+.search-box input {
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.625rem 2.5rem 0.625rem 2.5rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--border-hover);
+    box-shadow: 0 0 10px rgba(0, 235, 212, 0.15);
+}
+
+.search-box input:focus + .search-icon {
+    color: var(--color-top4);
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+}
+
+.clear-search-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Filter Buttons */
+.filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.filter-btn:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.filter-btn.active {
+    background-color: rgba(0, 235, 212, 0.1);
+    color: var(--color-top4);
+    border-color: var(--color-top4);
+    box-shadow: 0 0 8px rgba(0, 235, 212, 0.2);
+}
+
+/* Sorting Dropdown */
+.sort-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.sort-group label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+}
+
+.sort-group select {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem 0.5rem 0.75rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.sort-group select:focus {
+    border-color: var(--color-top4);
+}
+
+/* Champions Grid */
+.champions-grid-container {
+    min-height: 400px;
+}
+
+.champions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Loading & Empty States */
+.loading-state, .empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 0;
+    color: var(--text-secondary);
+    text-align: center;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 235, 212, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--color-top4);
+    animation: spin 1s linear infinite;
+}
+
+.empty-state h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Champion Card */
+.champion-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.champion-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-hover);
+    box-shadow: 0 6px 20px rgba(0, 235, 212, 0.15);
+}
+
+/* Unplayed Champion dimming */
+.champion-card.unplayed .portrait-container img {
+    filter: grayscale(85%) contrast(85%) brightness(60%);
+    transition: filter var(--transition-normal);
+}
+
+.champion-card:hover.unplayed .portrait-container img {
+    filter: grayscale(40%) contrast(90%) brightness(80%);
+}
+
+/* Portrait */
+.portrait-container {
+    width: 100%;
+    aspect-ratio: 1;
+    position: relative;
+    background-color: #050608;
+    overflow: hidden;
+}
+
+.portrait-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal), filter var(--transition-normal);
+}
+
+.champion-card:hover .portrait-container img {
+    transform: scale(1.05);
+}
+
+.champ-info {
+    padding: 0.65rem 0.5rem;
+    text-align: center;
+    background-color: rgba(14, 17, 26, 0.4);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 42px;
+}
+
+.champ-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3-Section Status Bar */
+.status-bar {
+    display: flex;
+    height: 32px;
+    background-color: var(--status-bg);
+}
+
+.status-sec {
+    flex: 1;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.status-sec:not(:last-child) {
+    border-right: 1px solid var(--border-color);
+}
+
+/* Tooltip on hover */
+.status-sec::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background-color: #07080c;
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    z-index: 10;
+}
+
+.status-sec:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Unselected button hover indicators */
+.status-sec.sec-p:hover:not(.active) {
+    background-color: rgba(205, 127, 50, 0.15);
+    color: var(--color-played);
+}
+.status-sec.sec-t:hover:not(.active) {
+    background-color: rgba(0, 235, 212, 0.15);
+    color: var(--color-top4);
+}
+.status-sec.sec-w:hover:not(.active) {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: var(--color-won);
+}
+
+/* Active buttons styling */
+.status-sec.sec-p.active {
+    background-color: var(--color-played);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.status-sec.sec-t.active {
+    background-color: var(--color-top4);
+    color: #000;
+    font-weight: 800;
+}
+
+.status-sec.sec-w.active {
+    background: var(--color-won-gradient);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* --- WON PREMIUM HIGHLIGHTING --- */
+.champion-card.won-champion {
+    border-color: var(--color-won);
+    box-shadow: 0 0 12px var(--color-won-glow);
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(243, 156, 18, 0.05) 100%);
+    animation: gold-pulse 4s infinite ease-in-out;
+}
+
+.champion-card.won-champion:hover {
+    border-color: #ffd700;
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.6);
+}
+
+/* Crown Overlay styling */
+.crown-icon {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    background-color: rgba(7, 8, 12, 0.85);
+    border: 1px solid var(--color-won);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+    z-index: 5;
+    animation: crown-entrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.crown-icon svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--color-won);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+/* Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes tag-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 0, 127, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(255, 0, 127, 0.8); }
+}
+
+@keyframes gold-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(243, 156, 18, 0.3); }
+    50% { box-shadow: 0 0 16px rgba(243, 156, 18, 0.5); }
+}
+
+@keyframes crown-entrance {
+    from {
+        transform: scale(0) rotate(-45deg);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive Footer */
+.app-footer {
+    border-top: 1px solid var(--border-color);
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.legend-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 4px;
+}
+
+.p-badge { background-color: var(--color-played); color: white; }
+.t-badge { background-color: var(--color-top4); color: #000; }
+.w-badge { background: var(--color-won-gradient); color: white; }
+
+.copyright {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+/* Mobile responsive fixes */
+@media (max-width: 768px) {
+    .app-container {
+        padding: 1.5rem 1rem;
+        gap: 1.5rem;
+    }
+    .app-header h1 {
+        font-size: 2rem;
+    }
+    .controls-panel {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    .sort-group {
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    .sort-group select {
+        flex: 1;
+        max-width: 200px;
+    }
+    .champions-grid {
+        grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+        gap: 0.75rem;
+    }
+    .champ-name {
+        font-size: 0.8rem;
+    }
+    .status-bar {
+        height: 28px;
+    }
+    .status-sec {
+        font-size: 0.65rem;
+    }
+    .crown-icon {
+        width: 20px;
+        height: 20px;
+        top: 4px;
+        right: 4px;
+    }
+    .crown-icon svg {
+        width: 10px;
+        height: 10px;
+    }
+}
