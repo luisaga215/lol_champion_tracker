@@ -323,7 +323,7 @@ function renderGrid() {
         portraitCont.className = 'portrait-container';
         
         const link = document.createElement('a');
-        const slug = champ.name.toLowerCase().replace(/[''.]/g, '').replace(/\s+/g, '-');
+        const slug = ({'Nunu & Willump': 'nunu', 'Jarvan IV': 'jarvan'})[champ.name] || champ.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
         link.href = `https://www.metasrc.com/lol/arena/champions/${slug}/build`;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
