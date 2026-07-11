@@ -323,7 +323,8 @@ function renderGrid() {
         portraitCont.className = 'portrait-container';
         
         const link = document.createElement('a');
-        link.href = `https://www.metasrc.com/lol/arena/champions/${champ.id.toLowerCase()}/build`;
+        const slug = champ.name.toLowerCase().replace(/[''.]/g, '').replace(/\s+/g, '-');
+        link.href = `https://www.metasrc.com/lol/arena/champions/${slug}/build`;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         const img = document.createElement('img');
