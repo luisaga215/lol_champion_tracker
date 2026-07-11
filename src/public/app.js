@@ -322,11 +322,16 @@ function renderGrid() {
         const portraitCont = document.createElement('div');
         portraitCont.className = 'portrait-container';
         
+        const link = document.createElement('a');
+        link.href = `https://www.metasrc.com/lol/arena/champions/${champ.id.toLowerCase()}/build`;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
         const img = document.createElement('img');
         img.src = `/images/champion/${champ.image_name}`;
         img.alt = champ.name;
         img.loading = 'lazy';
-        portraitCont.appendChild(img);
+        link.appendChild(img);
+        portraitCont.appendChild(link);
 
         // Add Crown overlay if Won
         if (champ.won) {
