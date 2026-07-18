@@ -56,6 +56,14 @@ async function initDatabase(dbPath, imagesDir) {
     );
   });
 
+  // Ensure tags column exists (migration for existing databases)
+  await new Promise((resolve) => {
+    db.run(`ALTER TABLE champions ADD COLUMN tags TEXT`, (err) => {
+      // Ignore error if column already exists
+      resolve();
+    });
+  });
+
   // Get Riot DDragon version
   let version = '14.12.1'; // Fallback version
   try {
@@ -111,25 +119,39 @@ async function initDatabase(dbPath, imagesDir) {
     const imageName = champ.image.full;
     const localImagePath = path.join(imagesDir, imageName);
 
-    // 1. Insert into database if not exists
-    const exists = await new Promise((resolve, reject) => {
-      db.get('SELECT 1 FROM champions WHERE id = ?', [champId], (err, row) => {
+    // 1. Insert into database if not exists (checking existing tags as well)
+    const existing = await new Promise((resolve, reject) => {
+      db.get('SELECT tags FROM champions WHERE id = ?', [champId], (err, row) => {
         if (err) reject(err);
-        else resolve(!!row);
+        else resolve(row);
       });
     });
 
-    if (!exists) {
+    const tagsStr = Array.isArray(champ.tags) ? champ.tags.join(',') : '';
+
+    if (!existing) {
       await new Promise((resolve, reject) => {
         db.run(
-          'INSERT INTO champions (id, name, image_name, played, top4, won) VALUES (?, ?, ?, 0, 0, 0)',
-          [champId, champName, imageName],
+          'INSERT INTO champions (id, name, image_name, played, top4, won, tags) VALUES (?, ?, ?, 0, 0, 0, ?)',
+          [champId, champName, imageName, tagsStr],
           (err) => {
             if (err) reject(err);
             else {
               insertedCount++;
               resolve();
             }
+          }
+        );
+      });
+    } else if (existing.tags === null || existing.tags === undefined || existing.tags === '') {
+      // If champion exists but tags are not populated, update them
+      await new Promise((resolve, reject) => {
+        db.run(
+          'UPDATE champions SET tags = ? WHERE id = ?',
+          [tagsStr, champId],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
           }
         );
       });

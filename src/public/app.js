@@ -3,12 +3,14 @@ let champions = [];
 let stats = { total: 0, played: 0, top4: 0, won: 0 };
 let searchQuery = '';
 let currentFilter = 'all';
+let currentRole = 'all';
 let currentSort = 'name-asc';
 
 // DOM Elements
 const searchInput = document.getElementById('search-input');
 const clearSearchBtn = document.getElementById('clear-search');
 const filterButtons = document.querySelectorAll('.filter-btn');
+const roleSelect = document.getElementById('role-select');
 const sortSelect = document.getElementById('sort-select');
 const championsGrid = document.getElementById('champions-grid');
 const loadingState = document.getElementById('loading-state');
@@ -36,36 +38,54 @@ window.addEventListener('DOMContentLoaded', () => {
 // Setup Event Listeners
 function setupEventListeners() {
     // Search input
-    searchInput.addEventListener('input', (e) => {
-        searchQuery = e.target.value.toLowerCase().trim();
-        clearSearchBtn.style.display = searchQuery ? 'flex' : 'none';
-        renderGrid();
-    });
-
-    // Clear search
-    clearSearchBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        searchQuery = '';
-        clearSearchBtn.style.display = 'none';
-        searchInput.focus();
-        renderGrid();
-    });
-
-    // Filter buttons
-    filterButtons.forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-            filterButtons.forEach((b) => b.classList.remove('active'));
-            e.target.classList.add('active');
-            currentFilter = e.target.getAttribute('data-filter');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = searchQuery ? 'flex' : 'none';
+            }
             renderGrid();
         });
-    });
+    }
+
+    // Clear search
+    if (clearSearchBtn && searchInput) {
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchQuery = '';
+            clearSearchBtn.style.display = 'none';
+            searchInput.focus();
+            renderGrid();
+        });
+    }
+
+    // Filter buttons
+    if (filterButtons) {
+        filterButtons.forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                filterButtons.forEach((b) => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.getAttribute('data-filter');
+                renderGrid();
+            });
+        });
+    }
+
+    // Role select
+    if (roleSelect) {
+        roleSelect.addEventListener('change', (e) => {
+            currentRole = e.target.value;
+            renderGrid();
+        });
+    }
 
     // Sort select
-    sortSelect.addEventListener('change', (e) => {
-        currentSort = e.target.value;
-        renderGrid();
-    });
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            renderGrid();
+        });
+    }
 }
 
 // Fetch champions and statistics
@@ -233,6 +253,14 @@ function matchesFilter(champ) {
     // Search query check
     if (searchQuery && !champ.name.toLowerCase().includes(searchQuery)) {
         return false;
+    }
+
+    // Role filter check
+    if (currentRole !== 'all') {
+        const roles = champ.tags ? champ.tags.split(',') : [];
+        if (!roles.includes(currentRole)) {
+            return false;
+        }
     }
 
     // Status filter check
