@@ -105,12 +105,21 @@ async function initDatabase(dbPath, imagesDir) {
     throw new Error('Could not fetch champion list and no local database seed is available.');
   }
 
-  const champions = Object.values(championData);
-  console.log(`[DDragon] Found ${champions.length} champions. Syncing with database...`);
+  // Filter out TFT/Event champions that have underscores in their ID (e.g., 'Jade_Ahri')
+  const champions = Object.values(championData).filter(champ => !champ.id.includes('_'));
+  console.log(`[DDragon] Found ${champions.length} valid champions. Syncing with database...`);
 
   // Sync with DB and download images
   let insertedCount = 0;
   let downloadedCount = 0;
+
+  // Cleanup old non-classic champions (e.g. Jade_ variants) that might have been accidentally inserted
+  await new Promise((resolve) => {
+    db.run(`DELETE FROM champions WHERE id LIKE '%\\_%' ESCAPE '\\'`, (err) => {
+      if (err) console.error('[Database] Error cleaning up non-classic champions:', err.message);
+      resolve();
+    });
+  });
 
   for (let i = 0; i < champions.length; i++) {
     const champ = champions[i];
