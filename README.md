@@ -7,7 +7,7 @@
 A sleek, interactive web dashboard to help you track your progress towards completing all champions in the **League of Legends: Arena** game mode.
 
 <p align="center">
-  <i>(Placeholder for Screenshot: Add a screenshot here to showcase the UI)</i>
+  <img src="./docs/screenshot.png" alt="Arena Champion Tracker UI Screenshot" width="800">
 </p>
 
 ---
