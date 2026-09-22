@@ -2,6 +2,9 @@
   "name": "lol-arena-tracker",
   "version": "1.0.0",
   "description": "League of Legends Arena Champion Tracker",
+  "author": "Open Source",
+  "license": "MIT",
+  "keywords": ["league-of-legends", "arena", "tracker", "gaming", "utility"],
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
