@@ -104,11 +104,6 @@ async function fetchData() {
         champions = await champsRes.json();
         stats = await statsRes.json();
 
-        // Hide loading state
-        if (loadingState) {
-            loadingState.style.display = 'none';
-        }
-
         renderStats();
         renderGrid();
     } catch (err) {
@@ -120,6 +115,11 @@ async function fetchData() {
                 <button onclick="fetchData()" class="filter-btn active" style="margin-top: 1rem;">Try Again</button>
             </div>
         `;
+    } finally {
+        // Always hide loading state once fetch concludes
+        if (loadingState) {
+            loadingState.style.display = 'none';
+        }
     }
 }
 
@@ -444,7 +444,12 @@ const PING_REGIONS = {
     br1: { name: 'BR', url: 'https://br1.api.riotgames.com', extUrl: 'https://lol-ping.com/en/br-ping-test/' }
 };
 
-let currentPingRegion = localStorage.getItem('lol_arena_ping_region') || 'la1';
+let currentPingRegion = 'la1';
+try {
+    currentPingRegion = localStorage.getItem('lol_arena_ping_region') || 'la1';
+} catch (e) {
+    currentPingRegion = 'la1';
+}
 let isTestingPing = false;
 
 function initPingTester() {
@@ -463,7 +468,9 @@ function initPingTester() {
 
         regionSelect.addEventListener('change', (e) => {
             currentPingRegion = e.target.value;
-            localStorage.setItem('lol_arena_ping_region', currentPingRegion);
+            try {
+                localStorage.setItem('lol_arena_ping_region', currentPingRegion);
+            } catch (err) {}
             updatePingExtLink();
             testPing();
         });
@@ -489,19 +496,19 @@ function initPingTester() {
     }
 
     // Initial test on page load
-    testPing();
+    testPing(false);
 
-    // Auto-refresh every 60 seconds when active
+    // Auto-refresh every 15 seconds when active
     setInterval(() => {
         if (!document.hidden && !isTestingPing) {
-            testPing();
+            testPing(true);
         }
-    }, 60000);
+    }, 15000);
 
     // Re-test when tab gains focus
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && !isTestingPing) {
-            testPing();
+            testPing(true);
         }
     });
 }
@@ -537,7 +544,7 @@ async function pingOnce(baseUrl) {
     }
 }
 
-async function testPing() {
+async function testPing(isAuto = false) {
     if (isTestingPing) return;
     isTestingPing = true;
 
@@ -547,10 +554,12 @@ async function testPing() {
     const regionData = PING_REGIONS[currentPingRegion] || PING_REGIONS.la1;
 
     if (pingWidget) {
-        pingWidget.className = 'ping-widget quality-testing';
+        if (!isAuto || !pingValue || pingValue.textContent === '-- ms') {
+            pingWidget.className = 'ping-widget quality-testing';
+            if (pingValue) pingValue.textContent = '... ms';
+        }
         pingWidget.title = `Testing latency to Riot ${regionData.name} server...`;
     }
-    if (pingValue) pingValue.textContent = '... ms';
     if (refreshBtn) refreshBtn.classList.add('rotating');
 
     try {
@@ -610,9 +619,12 @@ function applyPingResult(ms, jitter, regionName, samples) {
     pingValue.textContent = `${ms} ms`;
     const minPing = Math.min(...samples);
     const maxPing = Math.max(...samples);
-    pingWidget.title = `${regionName} Server (${PING_REGIONS[currentPingRegion]?.url || ''})\nAverage: ${ms} ms • Jitter: ${jitter} ms\nRange: ${minPing} - ${maxPing} ms\nStatus: ${qualityLabel}\nClick to re-test`;
-}
-    pingWidget.title = `${regionName} Server Latency: ${ms} ms (${qualityLabel})\nClick to re-test`;
+    const estGamePing = Math.max(15, ms - 40);
+    pingWidget.title = `${regionName} Server (${PING_REGIONS[currentPingRegion]?.url || ''})\n` +
+        `Web Latency: ${ms} ms • Jitter: ${jitter} ms\n` +
+        `Est. In-Game UDP: ~${estGamePing} ms\n` +
+        `Range: ${minPing} - ${maxPing} ms (${qualityLabel})\n` +
+        `Auto-refreshes every 15s • Click to re-test`;
 }
 
 function applyPingError(regionName) {
