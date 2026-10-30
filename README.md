@@ -27,6 +27,7 @@ It provides a premium, Hextech-inspired UI that automatically fetches the latest
 - **Smart Status Toggles:** The UI handles hierarchical logic natively. Toggling a "Win" automatically cascades to mark "Top 4" and "Played".
 - **Dynamic Filtering & Search:** Filter your roster by class role (Assassin, Tank, Support, etc.), missing completions, or sort them alphabetically and by progress.
 - **MetaSrc Integration:** Click a champion portrait to instantly open their latest optimal Arena build on [MetaSrc](https://www.metasrc.com/lol/arena).
+- **LAN Ping Test:** Quick header shortcut to [lol-ping.com](https://lol-ping.com/en/lan-ping-test/) to verify your latency before queueing.
 - **Automated Riot API Sync:** Auto-syncs with Riot's Data Dragon API on startup. When a new champion is released in League of Legends, they instantly appear in your app (while stripping out duplicate event/TFT variants).
 - **Persistent Storage:** Your progress is saved in a local SQLite database and mounted securely via Docker Volumes, meaning your data survives app restarts and container updates.
 
@@ -43,7 +44,7 @@ The recommended and easiest way to run the application is via **Docker**. This e
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/lol_champion_tracker.git
+   git clone https://github.com/luisaga215/lol_champion_tracker.git
    cd lol_champion_tracker
    ```
 2. **Start the application:**
