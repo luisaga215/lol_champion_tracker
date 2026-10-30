@@ -32,6 +32,7 @@ const barWon = document.getElementById('bar-won');
 // Initialize App
 window.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    initPingTester();
     fetchData();
 });
 
@@ -430,4 +431,182 @@ function renderGrid() {
     });
 
     championsGrid.appendChild(fragment);
+}
+
+// ==========================================
+// Live Server Latency / Ping Tester
+// ==========================================
+const PING_REGIONS = {
+    la1: { name: 'LAN', url: 'https://la1.api.riotgames.com', extUrl: 'https://lol-ping.com/en/lan-ping-test/' },
+    na1: { name: 'NA', url: 'https://na1.api.riotgames.com', extUrl: 'https://lol-ping.com/en/na-ping-test/' },
+    la2: { name: 'LAS', url: 'https://la2.api.riotgames.com', extUrl: 'https://lol-ping.com/en/las-ping-test/' },
+    euw1: { name: 'EUW', url: 'https://euw1.api.riotgames.com', extUrl: 'https://lol-ping.com/en/euw-ping-test/' },
+    br1: { name: 'BR', url: 'https://br1.api.riotgames.com', extUrl: 'https://lol-ping.com/en/br-ping-test/' }
+};
+
+let currentPingRegion = localStorage.getItem('lol_arena_ping_region') || 'la1';
+let isTestingPing = false;
+
+function initPingTester() {
+    const pingWidget = document.getElementById('ping-widget');
+    const regionSelect = document.getElementById('ping-region-select');
+    const retestBtn = document.getElementById('ping-retest-btn');
+    const refreshBtn = document.getElementById('ping-refresh-btn');
+
+    if (!pingWidget) return;
+
+    if (regionSelect) {
+        if (PING_REGIONS[currentPingRegion]) {
+            regionSelect.value = currentPingRegion;
+        }
+        updatePingExtLink();
+
+        regionSelect.addEventListener('change', (e) => {
+            currentPingRegion = e.target.value;
+            localStorage.setItem('lol_arena_ping_region', currentPingRegion);
+            updatePingExtLink();
+            testPing();
+        });
+    }
+
+    if (retestBtn) {
+        retestBtn.addEventListener('click', () => {
+            if (!isTestingPing) testPing();
+        });
+        retestBtn.addEventListener('keydown', (e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !isTestingPing) {
+                e.preventDefault();
+                testPing();
+            }
+        });
+    }
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!isTestingPing) testPing();
+        });
+    }
+
+    // Initial test on page load
+    testPing();
+
+    // Auto-refresh every 60 seconds when active
+    setInterval(() => {
+        if (!document.hidden && !isTestingPing) {
+            testPing();
+        }
+    }, 60000);
+
+    // Re-test when tab gains focus
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !isTestingPing) {
+            testPing();
+        }
+    });
+}
+
+function updatePingExtLink() {
+    const extLink = document.getElementById('ping-ext-link');
+    const regionData = PING_REGIONS[currentPingRegion] || PING_REGIONS.la1;
+    if (extLink && regionData.extUrl) {
+        extLink.href = regionData.extUrl;
+    }
+}
+
+async function pingOnce(baseUrl) {
+    const start = performance.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const url = `${baseUrl}?_t=${Date.now()}_${Math.random()}`;
+
+    try {
+        await fetch(url, {
+            method: 'GET',
+            mode: 'no-cors',
+            cache: 'no-store',
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return Math.max(1, Math.round(performance.now() - start));
+    } catch (e) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') return null;
+        const elapsed = Math.round(performance.now() - start);
+        return elapsed > 0 && elapsed < 2500 ? elapsed : null;
+    }
+}
+
+async function testPing() {
+    if (isTestingPing) return;
+    isTestingPing = true;
+
+    const pingWidget = document.getElementById('ping-widget');
+    const pingValue = document.getElementById('ping-value');
+    const refreshBtn = document.getElementById('ping-refresh-btn');
+    const regionData = PING_REGIONS[currentPingRegion] || PING_REGIONS.la1;
+
+    if (pingWidget) {
+        pingWidget.className = 'ping-widget quality-testing';
+        pingWidget.title = `Testing latency to Riot ${regionData.name} server...`;
+    }
+    if (pingValue) pingValue.textContent = '... ms';
+    if (refreshBtn) refreshBtn.classList.add('rotating');
+
+    try {
+        // Warmup connection
+        await pingOnce(regionData.url);
+
+        // Run 3 latency samples
+        const samples = [];
+        for (let i = 0; i < 3; i++) {
+            const ms = await pingOnce(regionData.url);
+            if (ms !== null) samples.push(ms);
+            if (i < 2) await new Promise((r) => setTimeout(r, 80));
+        }
+
+        if (samples.length > 0) {
+            // Take minimum of samples (closest representation of physical RTT)
+            const resultMs = Math.min(...samples);
+            applyPingResult(resultMs, regionData.name);
+        } else {
+            applyPingError(regionData.name);
+        }
+    } catch (err) {
+        applyPingError(regionData.name);
+    } finally {
+        isTestingPing = false;
+        if (refreshBtn) refreshBtn.classList.remove('rotating');
+    }
+}
+
+function applyPingResult(ms, regionName) {
+    const pingWidget = document.getElementById('ping-widget');
+    const pingValue = document.getElementById('ping-value');
+    if (!pingWidget || !pingValue) return;
+
+    let qualityClass = 'quality-good';
+    let qualityLabel = 'Excellent';
+
+    if (ms > 110) {
+        qualityClass = 'quality-poor';
+        qualityLabel = 'High';
+    } else if (ms > 60) {
+        qualityClass = 'quality-moderate';
+        qualityLabel = 'Moderate';
+    }
+
+    pingWidget.className = `ping-widget ${qualityClass}`;
+    pingValue.textContent = `${ms} ms`;
+    pingWidget.title = `${regionName} Server Latency: ${ms} ms (${qualityLabel})\nClick to re-test`;
+}
+
+function applyPingError(regionName) {
+    const pingWidget = document.getElementById('ping-widget');
+    const pingValue = document.getElementById('ping-value');
+    if (!pingWidget || !pingValue) return;
+
+    pingWidget.className = 'ping-widget quality-poor';
+    pingValue.textContent = 'Offline';
+    pingWidget.title = `Could not reach ${regionName} server. Click to retry.`;
 }

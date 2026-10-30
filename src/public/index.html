@@ -16,20 +16,41 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-top-actions">
-                <a href="https://lol-ping.com/en/lan-ping-test/" target="_blank" rel="noopener noreferrer" class="ping-test-btn" title="Test League of Legends LAN server ping">
-                    <svg class="ping-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
-                        <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
-                        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
-                        <line x1="12" y1="20" x2="12.01" y2="20"></line>
-                    </svg>
-                    <span>LAN Ping Test</span>
-                    <svg class="external-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                    </svg>
-                </a>
+                <div class="ping-widget" id="ping-widget" title="League of Legends Server Latency">
+                    <div class="ping-icon-wrap">
+                        <svg class="ping-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                        </svg>
+                    </div>
+                    <select id="ping-region-select" class="ping-region-select" title="Select LoL Server Region">
+                        <option value="la1" selected>LAN</option>
+                        <option value="na1">NA</option>
+                        <option value="la2">LAS</option>
+                        <option value="euw1">EUW</option>
+                        <option value="br1">BR</option>
+                    </select>
+                    <div class="ping-display" id="ping-retest-btn" role="button" tabindex="0" title="Click to test / refresh latency">
+                        <span class="ping-value" id="ping-value">-- ms</span>
+                        <span class="ping-status-dot" id="ping-status-dot"></span>
+                    </div>
+                    <button type="button" class="ping-refresh-btn" id="ping-refresh-btn" title="Re-test latency">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                    <a href="https://lol-ping.com/en/lan-ping-test/" target="_blank" rel="noopener noreferrer" class="ping-ext-link" id="ping-ext-link" title="Open full diagnostics on lol-ping.com">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
             </div>
             <div class="logo-area">
                 <span class="arena-tag">ARENA</span>

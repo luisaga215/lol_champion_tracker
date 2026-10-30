@@ -27,7 +27,7 @@ It provides a premium, Hextech-inspired UI that automatically fetches the latest
 - **Smart Status Toggles:** The UI handles hierarchical logic natively. Toggling a "Win" automatically cascades to mark "Top 4" and "Played".
 - **Dynamic Filtering & Search:** Filter your roster by class role (Assassin, Tank, Support, etc.), missing completions, or sort them alphabetically and by progress.
 - **MetaSrc Integration:** Click a champion portrait to instantly open their latest optimal Arena build on [MetaSrc](https://www.metasrc.com/lol/arena).
-- **LAN Ping Test:** Quick header shortcut to [lol-ping.com](https://lol-ping.com/en/lan-ping-test/) to verify your latency before queueing.
+- **Live Server Latency / Ping Meter:** Embedded live ping monitor right in the header measuring real-time latency directly to Riot's game servers (LAN by default, with quick selector for NA, LAS, EUW, BR). Features color-coded quality indicators, one-click re-testing, auto-refresh, and diagnostic links.
 - **Automated Riot API Sync:** Auto-syncs with Riot's Data Dragon API on startup. When a new champion is released in League of Legends, they instantly appear in your app (while stripping out duplicate event/TFT variants).
 - **Persistent Storage:** Your progress is saved in a local SQLite database and mounted securely via Docker Volumes, meaning your data survives app restarts and container updates.
 
