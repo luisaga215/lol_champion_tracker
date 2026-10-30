@@ -155,11 +155,15 @@ body {
     transition: color var(--transition-fast);
 }
 
-.ping-widget.quality-good .ping-value {
+.ping-widget.quality-excellent .ping-value {
     color: #00f093;
 }
 
-.ping-widget.quality-moderate .ping-value {
+.ping-widget.quality-good .ping-value {
+    color: #00ebd4;
+}
+
+.ping-widget.quality-fair .ping-value {
     color: #f5a623;
 }
 
@@ -180,12 +184,17 @@ body {
     flex-shrink: 0;
 }
 
-.ping-widget.quality-good .ping-status-dot {
+.ping-widget.quality-excellent .ping-status-dot {
     background-color: #00f093;
     box-shadow: 0 0 8px rgba(0, 240, 147, 0.7);
 }
 
-.ping-widget.quality-moderate .ping-status-dot {
+.ping-widget.quality-good .ping-status-dot {
+    background-color: #00ebd4;
+    box-shadow: 0 0 8px rgba(0, 235, 212, 0.7);
+}
+
+.ping-widget.quality-fair .ping-status-dot {
     background-color: #f5a623;
     box-shadow: 0 0 8px rgba(245, 166, 35, 0.7);
 }

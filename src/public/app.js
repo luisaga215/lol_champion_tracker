@@ -557,18 +557,25 @@ async function testPing() {
         // Warmup connection
         await pingOnce(regionData.url);
 
-        // Run 3 latency samples
+        // Run 4 latency samples
         const samples = [];
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             const ms = await pingOnce(regionData.url);
             if (ms !== null) samples.push(ms);
-            if (i < 2) await new Promise((r) => setTimeout(r, 80));
+            if (i < 3) await new Promise((r) => setTimeout(r, 70));
         }
 
         if (samples.length > 0) {
-            // Take minimum of samples (closest representation of physical RTT)
-            const resultMs = Math.min(...samples);
-            applyPingResult(resultMs, regionData.name);
+            const avgPing = Math.round(samples.reduce((a, b) => a + b, 0) / samples.length);
+            let jitter = 0;
+            if (samples.length > 1) {
+                let diffSum = 0;
+                for (let i = 1; i < samples.length; i++) {
+                    diffSum += Math.abs(samples[i] - samples[i - 1]);
+                }
+                jitter = Math.round(diffSum / (samples.length - 1));
+            }
+            applyPingResult(avgPing, jitter, regionData.name, samples);
         } else {
             applyPingError(regionData.name);
         }
@@ -580,24 +587,31 @@ async function testPing() {
     }
 }
 
-function applyPingResult(ms, regionName) {
+function applyPingResult(ms, jitter, regionName, samples) {
     const pingWidget = document.getElementById('ping-widget');
     const pingValue = document.getElementById('ping-value');
     if (!pingWidget || !pingValue) return;
 
-    let qualityClass = 'quality-good';
-    let qualityLabel = 'Excellent';
+    let qualityClass = 'quality-excellent';
+    let qualityLabel = '🟢 Excellent (0-30 ms)';
 
-    if (ms > 110) {
+    if (ms > 100) {
         qualityClass = 'quality-poor';
-        qualityLabel = 'High';
+        qualityLabel = '🔴 Poor (100+ ms)';
     } else if (ms > 60) {
-        qualityClass = 'quality-moderate';
-        qualityLabel = 'Moderate';
+        qualityClass = 'quality-fair';
+        qualityLabel = '🟡 Fair (60-100 ms)';
+    } else if (ms > 30) {
+        qualityClass = 'quality-good';
+        qualityLabel = '🔵 Good (30-60 ms)';
     }
 
     pingWidget.className = `ping-widget ${qualityClass}`;
     pingValue.textContent = `${ms} ms`;
+    const minPing = Math.min(...samples);
+    const maxPing = Math.max(...samples);
+    pingWidget.title = `${regionName} Server (${PING_REGIONS[currentPingRegion]?.url || ''})\nAverage: ${ms} ms • Jitter: ${jitter} ms\nRange: ${minPing} - ${maxPing} ms\nStatus: ${qualityLabel}\nClick to re-test`;
+}
     pingWidget.title = `${regionName} Server Latency: ${ms} ms (${qualityLabel})\nClick to re-test`;
 }
 
