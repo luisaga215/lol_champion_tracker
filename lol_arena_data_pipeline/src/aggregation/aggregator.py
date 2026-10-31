@@ -73,34 +73,42 @@ def mode(values: Sequence[Any]) -> Any:
 
 
 def tier_score(win_rate: float, top4_rate: float, avg_placement: float) -> float:
-    """Blend win rate, top-4 rate, and placement into a 0..1 tier score."""
+    """Blend win rate, top-4 rate, and placement into a 0..1 tier score.
+
+    Arena is a 4-team format: the win-rate baseline is ~12.5% and the top-4
+    baseline is 50%, so top-4 rate is weighted more heavily than win rate.
+    """
     placement_score = 1.0 - (avg_placement - 1.0) / 7.0
     placement_score = max(0.0, min(1.0, placement_score))
-    return 0.6 * win_rate + 0.25 * top4_rate + 0.15 * placement_score
+    return 0.30 * win_rate + 0.45 * top4_rate + 0.25 * placement_score
 
 
 def tier_from_score(score: float) -> str:
     """Map a tier score to a display tier."""
-    if score >= 0.68:
+    if score >= 0.56:
         return "S+"
-    if score >= 0.55:
+    if score >= 0.49:
         return "S"
-    if score >= 0.42:
+    if score >= 0.43:
         return "A"
-    if score >= 0.30:
+    if score >= 0.36:
         return "B"
     return "C"
 
 
-def perf_tier_from_win_rate(win_rate: float) -> str:
-    """Map a win rate to a performance tier (for items/augments)."""
-    if win_rate >= 0.55:
+def perf_tier_from_win_rate(rate: float) -> str:
+    """Map a top-4 rate to a performance tier (for items/augments).
+
+    Arena is a 4-team format, so a ~50% top-4 rate is the baseline; the
+    thresholds are set relative to that baseline to spread tiers out.
+    """
+    if rate >= 0.60:
         return "S+"
-    if win_rate >= 0.50:
+    if rate >= 0.55:
         return "S"
-    if win_rate >= 0.45:
+    if rate >= 0.50:
         return "A"
-    if win_rate >= 0.40:
+    if rate >= 0.45:
         return "B"
     return "C"
 
@@ -132,12 +140,12 @@ def _item_json(
     counter: Mapping[int, int],
     total: int,
     reference: ReferenceData,
-    wins: Mapping[int, int] | None = None,
+    top4: Mapping[int, int] | None = None,
 ) -> list[dict[str, Any]]:
-    win_map = wins or {}
+    top4_map = top4 or {}
     result: list[dict[str, Any]] = []
     for item_id, count in counter.items():
-        win_rate = win_map.get(item_id, 0) / count if count else 0.0
+        top4_rate = top4_map.get(item_id, 0) / count if count else 0.0
         result.append(
             {
                 "item_id": item_id,
@@ -146,10 +154,10 @@ def _item_json(
                 "desc_html": reference.item_description_html(item_id),
                 "icon": reference.item_icon(item_id),
                 "price": reference.item_price(item_id),
-                "performance_tier": perf_tier_from_win_rate(win_rate),
+                "performance_tier": perf_tier_from_win_rate(top4_rate),
                 "count": count,
                 "pick_rate": round(count / total, 4) if total else 0.0,
-                "win_rate": round(win_rate, 4),
+                "top4_rate": round(top4_rate, 4),
             }
         )
     result.sort(key=_pick_sort_key)
@@ -161,18 +169,18 @@ def build_augments(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     """Return ``(overall, silver, gold, prismatic)`` augment panels."""
     counts: Counter[int] = Counter()
-    wins: Counter[int] = Counter()
+    top4: Counter[int] = Counter()
     for row in rows:
         for augment_id in _row_augments(row):
             if reference.augment_tier(augment_id) == "special":
                 continue
             counts[augment_id] += 1
-            if int(row.get("placement", 0)) == WIN_PLACEMENT:
-                wins[augment_id] += 1
+            if int(row.get("placement", 0)) <= TOP4_PLACEMENT:
+                top4[augment_id] += 1
 
     overall: list[dict[str, Any]] = []
     for augment_id, count in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
-        win_rate = wins[augment_id] / count if count else 0.0
+        top4_rate = top4[augment_id] / count if count else 0.0
         overall.append(
             {
                 "augment_id": augment_id,
@@ -181,10 +189,10 @@ def build_augments(
                 "desc_html": reference.augment_description_html(augment_id),
                 "icon": reference.augment_icon(augment_id),
                 "tier": reference.augment_tier(augment_id),
-                "performance_tier": perf_tier_from_win_rate(win_rate),
+                "performance_tier": perf_tier_from_win_rate(top4_rate),
                 "count": count,
                 "pick_rate": round(count / total, 4) if total else 0.0,
-                "win_rate": round(win_rate, 4),
+                "top4_rate": round(top4_rate, 4),
             }
         )
     overall.sort(key=_pick_sort_key)
@@ -217,7 +225,7 @@ def build_round_items(
 ) -> dict[str, list[dict[str, Any]]]:
     """Group item purchases by Arena shop round, with performance tiers."""
     counts: dict[int, Counter[int]] = defaultdict(Counter)
-    wins: dict[int, Counter[int]] = defaultdict(Counter)
+    top4: dict[int, Counter[int]] = defaultdict(Counter)
     for purchase in purchases:
         round_number = purchase.get("round_number")
         if round_number is None:
@@ -229,11 +237,11 @@ def build_round_items(
             continue
         key = (purchase["match_id"], purchase["puuid"])
         counts[int(round_number)][item_id] += 1
-        if placements.get(key) == WIN_PLACEMENT:
-            wins[int(round_number)][item_id] += 1
+        if placements.get(key, 99) <= TOP4_PLACEMENT:
+            top4[int(round_number)][item_id] += 1
 
     return {
-        str(round_number): _item_json(counts[round_number], total, reference, wins[round_number])
+        str(round_number): _item_json(counts[round_number], total, reference, top4[round_number])
         for round_number in sorted(counts)
     }
 
@@ -243,17 +251,17 @@ def build_prismatic_items(
 ) -> list[dict[str, Any]]:
     """Aggregate prismatic item choices with performance tiers."""
     counts: Counter[int] = Counter()
-    wins: Counter[int] = Counter()
+    top4: Counter[int] = Counter()
     for row in rows:
         for item_id in _row_items(row):
             if item_id in reference.prismatic:
                 counts[item_id] += 1
-                if int(row.get("placement", 0)) == WIN_PLACEMENT:
-                    wins[item_id] += 1
+                if int(row.get("placement", 0)) <= TOP4_PLACEMENT:
+                    top4[item_id] += 1
 
     result: list[dict[str, Any]] = []
     for item_id, count in counts.items():
-        win_rate = wins[item_id] / count if count else 0.0
+        top4_rate = top4[item_id] / count if count else 0.0
         result.append(
             {
                 "item_id": item_id,
@@ -262,10 +270,10 @@ def build_prismatic_items(
                 "desc_html": reference.item_description_html(item_id),
                 "icon": reference.item_icon(item_id),
                 "price": reference.item_price(item_id),
-                "performance_tier": perf_tier_from_win_rate(win_rate),
+                "performance_tier": perf_tier_from_win_rate(top4_rate),
                 "count": count,
                 "pick_rate": round(count / total, 4) if total else 0.0,
-                "win_rate": round(win_rate, 4),
+                "top4_rate": round(top4_rate, 4),
             }
         )
     result.sort(key=_pick_sort_key)
@@ -458,20 +466,21 @@ def build_champion_meta(
         (row["match_id"], row["puuid"]): int(row.get("placement", 0)) for row in rows
     }
     boots_counter: Counter[int] = Counter()
-    boots_wins: Counter[int] = Counter()
+    boots_top4: Counter[int] = Counter()
     elixir_counter: Counter[int] = Counter()
-    elixir_wins: Counter[int] = Counter()
+    elixir_top4: Counter[int] = Counter()
     for purchase in purchases:
         item_id = int(purchase["item_id"])
-        won = placement_by_game.get((purchase["match_id"], purchase["puuid"])) == WIN_PLACEMENT
+        placement = placement_by_game.get((purchase["match_id"], purchase["puuid"]), 99)
+        top4 = placement <= TOP4_PLACEMENT
         if item_id in reference.boots:
             boots_counter[item_id] += 1
-            if won:
-                boots_wins[item_id] += 1
+            if top4:
+                boots_top4[item_id] += 1
         if item_id in reference.elixirs:
             elixir_counter[item_id] += 1
-            if won:
-                elixir_wins[item_id] += 1
+            if top4:
+                elixir_top4[item_id] += 1
 
     return ChampionMetaRecord(
         champion_id=champion_id,
@@ -492,11 +501,11 @@ def build_champion_meta(
         augments_silver=silver,
         augments_gold=gold,
         augments_prismatic=prismatic,
-        boots=_item_json(boots_counter, total, reference, boots_wins),
+        boots=_item_json(boots_counter, total, reference, boots_top4),
         prismatic_items=build_prismatic_items(rows, total, reference),
         full_build=build_full_build(rows, purchases, reference),
         round_items=build_round_items(purchases, placement_by_game, total, reference),
-        elixirs=_item_json(elixir_counter, total, reference, elixir_wins),
+        elixirs=_item_json(elixir_counter, total, reference, elixir_top4),
         build_styles=build_build_styles(rows, purchases, reference),
         partner_synergies=build_partner_synergies(rows, names),
     )

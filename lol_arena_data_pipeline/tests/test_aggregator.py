@@ -155,7 +155,7 @@ def test_build_champion_meta_core_stats() -> None:
 
 def test_build_champion_meta_tier_rank() -> None:
     record = build_champion_meta(266, "26.21", make_rows(), make_purchases(), make_reference())
-    assert record.tier_rank == "A"
+    assert record.tier_rank == "S"
 
 
 def test_build_champion_meta_items_with_names() -> None:
@@ -177,7 +177,7 @@ def test_build_champion_meta_augments_by_tier() -> None:
     by_id = {entry["augment_id"]: entry for entry in record.augments_overall}
     assert by_id[60001]["name"] == "Blood Brother"
     assert by_id[60001]["tier"] == "silver"
-    assert by_id[60001]["performance_tier"] == "S"
+    assert by_id[60001]["performance_tier"] == "A"
 
 
 def test_build_champion_meta_skill_distribution() -> None:
@@ -203,11 +203,11 @@ def test_classify_empty() -> None:
 
 
 def test_perf_tier_and_tier_bounds() -> None:
-    assert perf_tier_from_win_rate(0.6) == "S+"
-    assert perf_tier_from_win_rate(0.51) == "S"
-    assert perf_tier_from_win_rate(0.46) == "A"
-    assert perf_tier_from_win_rate(0.41) == "B"
-    assert perf_tier_from_win_rate(0.2) == "C"
+    assert perf_tier_from_win_rate(0.62) == "S+"
+    assert perf_tier_from_win_rate(0.56) == "S"
+    assert perf_tier_from_win_rate(0.51) == "A"
+    assert perf_tier_from_win_rate(0.46) == "B"
+    assert perf_tier_from_win_rate(0.40) == "C"
     assert tier_from_score(0.70) == "S+"
     assert tier_from_score(0.10) == "C"
     assert tier_score(1.0, 1.0, 1.0) == 1.0

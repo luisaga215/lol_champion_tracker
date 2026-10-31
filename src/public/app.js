@@ -821,11 +821,12 @@ function pct(v) {
     return `${Math.round((v || 0) * 100)}%`;
 }
 
-function iconImg(url, name, rarity) {
+function iconImg(url, name, rarity, hasName = true) {
     const rar = rarity ? `rarity-${rarity}` : '';
+    const placeholder = hasName ? esc((name || '?').charAt(0)) : '?';
     const inner = url
         ? `<img class="icon-img" src="${esc(url)}" alt="${esc(name || '')}" loading="lazy">`
-        : `<div class="icon-ph">${esc((name || '?').charAt(0))}</div>`;
+        : `<div class="icon-ph">${placeholder}</div>`;
     return `<div class="icon-avatar ${rar}">${inner}</div>`;
 }
 
@@ -836,7 +837,9 @@ function colorSkillLetters(str) {
 }
 
 function iconCard(entry, opts) {
-    const name = entry.name || `#${entry[opts.idKey]}`;
+    const kind = opts.idKey === 'augment_id' ? 'Augment' : 'Item';
+    const hasName = !!entry.name;
+    const name = entry.name || `${kind} #${entry[opts.idKey]}`;
     const tierVal = opts.showTier ? (entry.performance_tier || entry.tier) : null;
     const tipData = JSON.stringify({
         name: name,
@@ -853,7 +856,7 @@ function iconCard(entry, opts) {
         parts.push(`${entry.count} game${entry.count === 1 ? '' : 's'}`);
     }
     return `<div class="icon-card" data-tip="${esc(tipData)}">
-        ${iconImg(entry.icon, name, entry.tier)}
+        ${iconImg(entry.icon, name, entry.tier, hasName)}
         <div class="icon-name">${esc(name)}</div>
         ${tierVal ? `<div class="icon-tier ${tierClass(tierVal)}">${esc(tierVal)}</div>` : ''}
         ${parts.length ? `<div class="icon-meta">${parts.join(' · ')}</div>` : ''}
@@ -1100,6 +1103,15 @@ function renderMetaModal() {
             </div>
             ${renderSkillMatrix(meta.skill_progression)}
         `)}
+
+        <div class="tier-legend">
+            <span class="tier-legend-label">Tier</span>
+            <span class="tier-legend-item"><span class="icon-tier tier-Splus">S+</span><span class="tier-meaning">Elite</span></span>
+            <span class="tier-legend-item"><span class="icon-tier tier-S">S</span><span class="tier-meaning">Great</span></span>
+            <span class="tier-legend-item"><span class="icon-tier tier-A">A</span><span class="tier-meaning">Strong</span></span>
+            <span class="tier-legend-item"><span class="icon-tier tier-B">B</span><span class="tier-meaning">Average</span></span>
+            <span class="tier-legend-item"><span class="icon-tier tier-C">C</span><span class="tier-meaning">Weak</span></span>
+        </div>
 
         <div class="meta-columns">
             <div class="meta-col">

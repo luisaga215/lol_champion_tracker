@@ -992,6 +992,7 @@ body {
     font-weight: 800;
     letter-spacing: 0.03em;
     border-radius: 4px;
+    text-decoration: none;
     color: #0a0e14;
     background: #7c8a9c;
     cursor: pointer;
@@ -1347,6 +1348,32 @@ body {
 .icon-tier.tier-C { background: linear-gradient(135deg, #c98a5e, #a06a3f); color: #160d05; }
 .icon-meta { font-size: 0.66rem; color: var(--text-muted); }
 
+/* Tier legend */
+.tier-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+.tier-legend-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-right: 0.2rem;
+}
+.tier-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.tier-meaning {
+    font-size: 0.64rem;
+    color: var(--text-muted);
+}
+
 /* Build-style custom dropdown */
 .style-label {
     display: block;
@@ -1467,6 +1494,7 @@ body {
     font-size: 0.7rem;
 }
 .meta-section.collapsed .meta-section-body { display: none; }
+.meta-section-body { margin-top: 0.55rem; }
 .meta-section.collapsed .toggle-arrow { transform: rotate(-90deg); }
 
 /* Hover tooltip */
