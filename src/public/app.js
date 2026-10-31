@@ -1038,9 +1038,10 @@ function renderMetaModal() {
         </button>`;
     }).join('');
 
-    const augSection = (title, entries) => {
+    const augSection = (title, entries, labeled = true) => {
         if (!entries || entries.length === 0) return '';
-        return `<div class="meta-subsection"><h4>${title}</h4>${iconStripWithMore(entries, { idKey: 'augment_id', showPick: true, showTier: true }, 5)}</div>`;
+        const label = labeled ? `<h4>${title}</h4>` : '';
+        return `<div class="meta-subsection">${label}${iconStripWithMore(entries, { idKey: 'augment_id', showPick: true, showTier: true }, 5)}</div>`;
     };
 
     const roundKeys = ['1', '2', '4', '6', '9', '11'];
@@ -1105,18 +1106,18 @@ function renderMetaModal() {
         `)}
 
         <div class="tier-legend">
-            <span class="tier-legend-label">Tier</span>
-            <span class="tier-legend-item"><span class="icon-tier tier-Splus">S+</span><span class="tier-meaning">Elite</span></span>
-            <span class="tier-legend-item"><span class="icon-tier tier-S">S</span><span class="tier-meaning">Great</span></span>
-            <span class="tier-legend-item"><span class="icon-tier tier-A">A</span><span class="tier-meaning">Strong</span></span>
-            <span class="tier-legend-item"><span class="icon-tier tier-B">B</span><span class="tier-meaning">Average</span></span>
-            <span class="tier-legend-item"><span class="icon-tier tier-C">C</span><span class="tier-meaning">Weak</span></span>
+            <span class="tier-legend-label" title="Item & augment tiers are based on top-4 rate (games ending in the top 4), not pick rate or win rate. Champion tiers blend win rate + top-4 rate + average placement.">Tier</span>
+            <span class="tier-legend-item" title="Elite — top-4 rate ≥ 60%"><span class="icon-tier tier-Splus">S+</span><span class="tier-meaning">Elite</span></span>
+            <span class="tier-legend-item" title="Great — top-4 rate ≥ 55%"><span class="icon-tier tier-S">S</span><span class="tier-meaning">Great</span></span>
+            <span class="tier-legend-item" title="Strong — top-4 rate ≥ 50%"><span class="icon-tier tier-A">A</span><span class="tier-meaning">Strong</span></span>
+            <span class="tier-legend-item" title="Average — top-4 rate ≥ 45%"><span class="icon-tier tier-B">B</span><span class="tier-meaning">Average</span></span>
+            <span class="tier-legend-item" title="Weak — top-4 rate below 45%"><span class="icon-tier tier-C">C</span><span class="tier-meaning">Weak</span></span>
         </div>
 
         <div class="meta-columns">
             <div class="meta-col">
                 ${metaSection('Augments', hasAugments
-                    ? `${augSection('Overall', meta.augments_overall)}
+                    ? `${augSection('Overall', meta.augments_overall, false)}
                        ${augSection('Silver', meta.augments_silver)}
                        ${augSection('Gold', meta.augments_gold)}
                        ${augSection('Prismatic', meta.augments_prismatic)}`
