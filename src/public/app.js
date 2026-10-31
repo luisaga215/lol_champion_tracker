@@ -5,6 +5,7 @@ let searchQuery = '';
 let currentFilter = 'all';
 let currentRole = 'all';
 let currentSort = 'name-asc';
+let currentTier = 'all';
 let arenaMeta = {};
 let latestPatch = null;
 
@@ -14,6 +15,7 @@ const clearSearchBtn = document.getElementById('clear-search');
 const filterButtons = document.querySelectorAll('.filter-btn');
 const roleSelect = document.getElementById('role-select');
 const sortSelect = document.getElementById('sort-select');
+const tierSelect = document.getElementById('tier-select');
 const championsGrid = document.getElementById('champions-grid');
 const loadingState = document.getElementById('loading-state');
 
@@ -88,6 +90,14 @@ function setupEventListeners() {
     if (sortSelect) {
         sortSelect.addEventListener('change', (e) => {
             currentSort = e.target.value;
+            renderGrid();
+        });
+    }
+
+    // Tier select
+    if (tierSelect) {
+        tierSelect.addEventListener('change', (e) => {
+            currentTier = e.target.value;
             renderGrid();
         });
     }
@@ -304,6 +314,14 @@ function matchesFilter(champ) {
         }
     }
 
+    // Tier filter check
+    if (currentTier !== 'all') {
+        const meta = arenaMeta[String(champ.key)];
+        if (!meta || meta.tier_rank !== currentTier) {
+            return false;
+        }
+    }
+
     // Status filter check
     switch (currentFilter) {
         case 'unplayed':
@@ -330,6 +348,7 @@ function renderGrid() {
     let filteredChamps = champions.filter(matchesFilter);
 
     // Sort champions
+    const tierRank = (t) => ({ 'S+': 0, S: 1, A: 2, B: 3, C: 4 }[t] ?? 5);
     filteredChamps.sort((a, b) => {
         // Name A-Z
         if (currentSort === 'name-asc') {
@@ -338,6 +357,13 @@ function renderGrid() {
         // Name Z-A
         if (currentSort === 'name-desc') {
             return b.name.localeCompare(a.name);
+        }
+        // Tier best-first / worst-first
+        if (currentSort === 'tier-desc' || currentSort === 'tier-asc') {
+            const ra = tierRank(arenaMeta[String(a.key)] && arenaMeta[String(a.key)].tier_rank);
+            const rb = tierRank(arenaMeta[String(b.key)] && arenaMeta[String(b.key)].tier_rank);
+            if (ra !== rb) return currentSort === 'tier-desc' ? ra - rb : rb - ra;
+            return a.name.localeCompare(b.name);
         }
         
         // Custom score for completion sort: Won = 3, Top 4 = 2, Played = 1, Unplayed = 0

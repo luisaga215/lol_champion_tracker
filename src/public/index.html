@@ -136,11 +136,25 @@
                     </select>
                 </div>
 
+                <div class="tier-group">
+                    <label for="tier-select">Tier</label>
+                    <select id="tier-select">
+                        <option value="all">All Tiers</option>
+                        <option value="S+">S+</option>
+                        <option value="S">S</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select>
+                </div>
+
                 <div class="sort-group">
                     <label for="sort-select">Sort By</label>
                     <select id="sort-select">
                         <option value="name-asc">Name (A-Z)</option>
                         <option value="name-desc">Name (Z-A)</option>
+                        <option value="tier-desc">Tier (Best First)</option>
+                        <option value="tier-asc">Tier (Worst First)</option>
                         <option value="status-desc">Highest Progress</option>
                         <option value="status-asc">Lowest Progress</option>
                     </select>
