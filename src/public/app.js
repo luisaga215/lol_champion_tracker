@@ -866,6 +866,19 @@ function iconStrip(entries, opts) {
     return `<div class="icon-grid">${cards}</div>`;
 }
 
+function iconStripWithMore(entries, opts, max = 5) {
+    if (!entries || entries.length === 0) return '<span class="meta-empty">No data</span>';
+    const visible = entries.slice(0, max);
+    const hidden = entries.slice(max);
+    let html = `<div class="icon-wrap"><div class="icon-grid">${visible.map((e) => iconCard(e, opts)).join('')}</div>`;
+    if (hidden.length) {
+        html += `<div class="aug-hidden" hidden><div class="icon-grid">${hidden.map((e) => iconCard(e, opts)).join('')}</div></div>`;
+        html += `<button type="button" class="aug-more" data-more="Show more (+${hidden.length})" onclick="toggleAugments(this)">Show more (+${hidden.length})</button>`;
+    }
+    html += '</div>';
+    return html;
+}
+
 function metaSection(title, content, collapsed = false) {
     return `<div class="meta-section${collapsed ? ' collapsed' : ''}">
         <button type="button" class="meta-section-header" onclick="toggleSection(this)">
@@ -879,6 +892,14 @@ function metaSection(title, content, collapsed = false) {
 function toggleSection(btn) {
     const section = btn.closest('.meta-section');
     if (section) section.classList.toggle('collapsed');
+}
+
+function toggleAugments(btn) {
+    const hidden = btn.closest('.icon-wrap').querySelector('.aug-hidden');
+    if (!hidden) return;
+    const expand = hidden.hidden;
+    hidden.hidden = !expand;
+    btn.textContent = expand ? 'Show less' : btn.getAttribute('data-more');
 }
 
 function setupTooltip() {
@@ -938,6 +959,7 @@ function richDesc(html) {
         else cls = 'kw-' + t;
         return close ? '</span>' : `<span class="${cls}">`;
     });
+    s = s.replace(/(<br>\s*){2,}/g, '<br>');
     return `<div class="tt-desc rich">${s}</div>`;
 }
 
@@ -1015,7 +1037,7 @@ function renderMetaModal() {
 
     const augSection = (title, entries) => {
         if (!entries || entries.length === 0) return '';
-        return `<div class="meta-subsection"><h4>${title}</h4>${iconStrip(entries, { idKey: 'augment_id', showPick: true, showTier: true, limit: 6 })}</div>`;
+        return `<div class="meta-subsection"><h4>${title}</h4>${iconStripWithMore(entries, { idKey: 'augment_id', showPick: true, showTier: true }, 5)}</div>`;
     };
 
     const roundKeys = ['1', '2', '4', '6', '9', '11'];
@@ -1023,8 +1045,20 @@ function renderMetaModal() {
     const roundRows = roundKeys
         .filter((r) => roundItems[r] && roundItems[r].length)
         .map((r) => (
-            `<div class="round-row"><div class="round-label">Round ${r}</div>${iconStrip(roundItems[r], { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 })}</div>`
+            `<div class="round-row"><div class="round-label">Round ${r}</div>${iconStripWithMore(roundItems[r], { idKey: 'item_id', showPick: true, showTier: true }, 5)}</div>`
         )).join('');
+
+    const fullBuild = meta.full_build || [];
+    const fullBuildRow = fullBuild.length
+        ? `<div class="full-build">${fullBuild.map((it) => {
+            const name = it.name || `#${it.item_id}`;
+            const tip = JSON.stringify({
+                name: name, rarity: '', tier: '', desc: it.description || '',
+                descHtml: it.desc_html || '', price: it.price || 0, icon: it.icon || ''
+            });
+            return `<span class="fb-item" data-tip="${esc(tip)}">${iconImg(it.icon, name)}</span>`;
+        }).join('')}</div>`
+        : '<span class="meta-empty">No data</span>';
 
     const partners = (meta.partner_synergies || []).slice(0, 6).map((p) => (
         `<span class="meta-item-chip">${esc(p.champion_name || ('#' + p.champion_id))} <span class="rate">${p.games}G / ${pct(p.win_rate)}</span></span>`
@@ -1059,7 +1093,6 @@ function renderMetaModal() {
             <div class="meta-stat"><div class="value">${meta.avg_placement ?? '-'}</div><div class="label">Avg Place</div></div>
         </div>
 
-        <div class="meta-columns">
         ${metaSection('Skill Order', `
             <div class="meta-tagline">
                 <span class="meta-pill big">${colorSkillLetters(esc(meta.skill_priority || '-'))}</span>
@@ -1068,23 +1101,27 @@ function renderMetaModal() {
             ${renderSkillMatrix(meta.skill_progression)}
         `)}
 
-        ${metaSection('Augments', hasAugments
-            ? `${augSection('Overall', meta.augments_overall)}
-               ${augSection('Silver', meta.augments_silver)}
-               ${augSection('Gold', meta.augments_gold)}
-               ${augSection('Prismatic', meta.augments_prismatic)}`
-            : '<span class="meta-empty">No data</span>')}
-
-        ${metaSection('Boots', iconStrip(meta.boots, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
-
-        ${metaSection('Items by Round', roundRows || '<span class="meta-empty">No data</span>')}
+        <div class="meta-columns">
+            <div class="meta-col">
+                ${metaSection('Augments', hasAugments
+                    ? `${augSection('Overall', meta.augments_overall)}
+                       ${augSection('Silver', meta.augments_silver)}
+                       ${augSection('Gold', meta.augments_gold)}
+                       ${augSection('Prismatic', meta.augments_prismatic)}`
+                    : '<span class="meta-empty">No data</span>')}
+            </div>
+            <div class="meta-col">
+                ${metaSection('Boots', iconStrip(meta.boots, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
+                ${metaSection('Items by Round', roundRows || '<span class="meta-empty">No data</span>', true)}
+                ${metaSection('Full Build', fullBuildRow)}
+            </div>
+        </div>
 
         ${metaSection('Best Prismatic Items', iconStrip(meta.prismatic_items, { idKey: 'item_id', showPick: true, showTier: true, limit: 8 }))}
 
         ${metaSection('Late-Game Elixirs', iconStrip(meta.elixirs, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
 
         ${metaSection('Best Partners', `<div class="meta-item-list">${partners}</div>`)}
-        </div>
     `;
 }
 

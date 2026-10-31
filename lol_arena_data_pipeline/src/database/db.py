@@ -44,7 +44,12 @@ class Database:
             row["name"]
             for row in self._conn.execute("PRAGMA table_info(champion_arena_meta)").fetchall()
         }
-        required_meta_cols = {"build_style", "skill_progression", "skill_order_distribution_json"}
+        required_meta_cols = {
+            "build_style",
+            "skill_progression",
+            "skill_order_distribution_json",
+            "full_build_json",
+        }
         if meta_cols and not required_meta_cols.issubset(meta_cols):
             self._conn.execute("DROP TABLE champion_arena_meta")
 

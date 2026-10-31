@@ -62,6 +62,7 @@ class PipelineService:
                 self._purchases,
                 self._queue,
                 self._settings,
+                max_matches=self._settings.crawler_cycle_max_matches,
             )
             new_matches = await crawler.crawl(self._settings.crawler_seed_puuids)
 

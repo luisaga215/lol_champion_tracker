@@ -42,8 +42,23 @@ MAX_ITEMS = 12
 MAX_BUILD_STYLES = 5
 MAX_PARTNERS = 10
 
-#: Sort order for performance tiers (best first).
-_PERF_TIER_ORDER: dict[str, int] = {"S+": 0, "S": 1, "A": 2, "B": 3, "C": 4}
+#: Generic "random gift" consumables that pollute the Items-by-Round panels.
+EXCLUDED_ROUND_ITEM_IDS: frozenset[int] = frozenset(
+    {
+        220000,  # Stat Bonus
+        220001,  # Legendary Fighter Item
+        220002,  # Legendary Marksman Item
+        220003,  # Legendary Assassin Item
+        220004,  # Legendary Mage Item
+        220005,  # Legendary Tank Item
+        220006,  # Legendary Support Item
+        220007,  # Prismatic Item
+        220008,  # Anvil Voucher
+        220009,  # Gold Stat Anvil Voucher
+        220010,  # Prismatic Stat Voucher
+        220011,  # Bravery Voucher
+    }
+)
 
 _ITEM_COLS = ("item0", "item1", "item2", "item3", "item4", "item5", "item6")
 _AUGMENT_COLS = ("player_augment1", "player_augment2", "player_augment3", "player_augment4")
@@ -105,10 +120,11 @@ def classify_rows(
     return {(row["match_id"], row["puuid"]): reference.classify(_row_items(row)) for row in rows}
 
 
-def _tier_sort_key(entry: Mapping[str, Any]) -> tuple[int, float]:
+def _pick_sort_key(entry: Mapping[str, Any]) -> tuple[float, int]:
+    # Order by pick rate first, then by item id for determinism.
     return (
-        _PERF_TIER_ORDER.get(entry.get("performance_tier"), 99),
         -float(entry.get("pick_rate") or 0.0),
+        int(entry.get("item_id") or entry.get("augment_id") or 0),
     )
 
 
@@ -136,7 +152,7 @@ def _item_json(
                 "win_rate": round(win_rate, 4),
             }
         )
-    result.sort(key=_tier_sort_key)
+    result.sort(key=_pick_sort_key)
     return result[:MAX_ITEMS]
 
 
@@ -171,12 +187,7 @@ def build_augments(
                 "win_rate": round(win_rate, 4),
             }
         )
-    overall.sort(
-        key=lambda entry: (
-            _PERF_TIER_ORDER.get(entry["performance_tier"], 99),
-            -entry["count"],
-        )
-    )
+    overall.sort(key=_pick_sort_key)
     overall = overall[:MAX_AUGMENTS]
 
     def _by_tier(tier: str) -> list[dict[str, Any]]:
@@ -212,6 +223,8 @@ def build_round_items(
         if round_number is None:
             continue
         item_id = int(purchase["item_id"])
+        if item_id in EXCLUDED_ROUND_ITEM_IDS:
+            continue
         key = (purchase["match_id"], purchase["puuid"])
         counts[int(round_number)][item_id] += 1
         if placements.get(key) == WIN_PLACEMENT:
@@ -253,8 +266,36 @@ def build_prismatic_items(
                 "win_rate": round(win_rate, 4),
             }
         )
-    result.sort(key=_tier_sort_key)
+    result.sort(key=_pick_sort_key)
     return result[:MAX_ITEMS]
+
+
+def build_full_build(
+    rows: Sequence[Mapping[str, Any]], reference: ReferenceData
+) -> list[dict[str, Any]]:
+    """Return the top non-boot final items (a representative full build)."""
+    counts: Counter[int] = Counter()
+    for row in rows:
+        for item_id in _row_items(row):
+            if item_id == 0 or item_id in reference.boots or item_id in EXCLUDED_ROUND_ITEM_IDS:
+                continue
+            counts[item_id] += 1
+
+    total = len(rows)
+    result: list[dict[str, Any]] = []
+    for item_id, count in counts.most_common(6):
+        result.append(
+            {
+                "item_id": item_id,
+                "name": reference.item_name(item_id),
+                "description": reference.item_description(item_id),
+                "desc_html": reference.item_description_html(item_id),
+                "icon": reference.item_icon(item_id),
+                "price": reference.item_price(item_id),
+                "pick_rate": round(count / total, 4) if total else 0.0,
+            }
+        )
+    return result
 
 
 def build_build_styles(
@@ -400,6 +441,7 @@ def build_champion_meta(
         augments_prismatic=prismatic,
         boots=_item_json(boots_counter, total, reference, boots_wins),
         prismatic_items=build_prismatic_items(rows, total, reference),
+        full_build=build_full_build(rows, reference),
         round_items=build_round_items(purchases, placement_by_game, total, reference),
         elixirs=_item_json(elixir_counter, total, reference, elixir_wins),
         build_styles=build_build_styles(rows, purchases, reference),

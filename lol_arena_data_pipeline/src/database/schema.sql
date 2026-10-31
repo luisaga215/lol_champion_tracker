@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS champion_arena_meta (
     augments_prismatic_json TEXT,
     boots_json TEXT,
     prismatic_items_json TEXT,
+    full_build_json TEXT,
     round_items_json TEXT,
     elixirs_json TEXT,
     build_styles_json TEXT,

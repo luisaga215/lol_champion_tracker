@@ -88,6 +88,7 @@ class ChampionMetaRecord:
     augments_prismatic: list[dict[str, Any]] = field(default_factory=list)
     boots: list[dict[str, Any]] = field(default_factory=list)
     prismatic_items: list[dict[str, Any]] = field(default_factory=list)
+    full_build: list[dict[str, Any]] = field(default_factory=list)
     round_items: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     elixirs: list[dict[str, Any]] = field(default_factory=list)
     build_styles: list[dict[str, Any]] = field(default_factory=list)
@@ -266,6 +267,7 @@ class ChampionMetaRepository:
         "augments_prismatic_json",
         "boots_json",
         "prismatic_items_json",
+        "full_build_json",
         "round_items_json",
         "elixirs_json",
         "build_styles_json",
@@ -284,10 +286,10 @@ class ChampionMetaRepository:
                 win_count, top4_count, win_rate, top4_rate, avg_placement, tier_rank,
                 skill_priority, skill_order_distribution_json, skill_progression,
                 augments_overall_json, augments_silver_json, augments_gold_json,
-                augments_prismatic_json, boots_json, prismatic_items_json,
+                augments_prismatic_json, boots_json, prismatic_items_json, full_build_json,
                 round_items_json, elixirs_json, build_styles_json, partner_synergies_json,
                 updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
             (
                 record.champion_id,
@@ -310,6 +312,7 @@ class ChampionMetaRepository:
                 j(record.augments_prismatic),
                 j(record.boots),
                 j(record.prismatic_items),
+                j(record.full_build),
                 j(record.round_items),
                 j(record.elixirs),
                 j(record.build_styles),

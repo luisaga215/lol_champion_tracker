@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     crawler_interval_seconds: int = Field(
         default=900, ge=60, description="Seconds between scheduled crawl+aggregate cycles."
     )
+    crawler_cycle_max_matches: int = Field(
+        default=300,
+        ge=1,
+        description="Max matches to crawl per scheduler cycle (keeps aggregation fresh).",
+    )
     reference_fetch_enabled: bool = Field(
         default=True,
         description="Fetch CommunityDragon item/augment reference data at startup.",

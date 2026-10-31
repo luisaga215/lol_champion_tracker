@@ -65,6 +65,7 @@ class ChampionMeta(BaseModel):
     augments_prismatic: list[dict[str, Any]] = Field(default_factory=list)
     boots: list[dict[str, Any]] = Field(default_factory=list)
     prismatic_items: list[dict[str, Any]] = Field(default_factory=list)
+    full_build: list[dict[str, Any]] = Field(default_factory=list)
     round_items: dict[str, list[dict[str, Any]]] = Field(default_factory=dict)
     elixirs: list[dict[str, Any]] = Field(default_factory=list)
     build_styles: list[dict[str, Any]] = Field(default_factory=list)
@@ -83,6 +84,7 @@ class ChampionMeta(BaseModel):
                 "augments_prismatic",
                 "boots",
                 "prismatic_items",
+                "full_build",
                 "elixirs",
                 "build_styles",
                 "partner_synergies",
