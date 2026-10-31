@@ -1042,11 +1042,17 @@ function renderMetaModal() {
 
     const roundKeys = ['1', '2', '4', '6', '9', '11'];
     const roundItems = meta.round_items || {};
+    const bestPrismatic = (meta.prismatic_items && meta.prismatic_items.length) ? meta.prismatic_items[0] : null;
+
     const roundRows = roundKeys
-        .filter((r) => roundItems[r] && roundItems[r].length)
-        .map((r) => (
-            `<div class="round-row"><div class="round-label">Round ${r}</div>${iconStripWithMore(roundItems[r], { idKey: 'item_id', showPick: true, showTier: true }, 5)}</div>`
-        )).join('');
+        .filter((r) => (roundItems[r] && roundItems[r].length) || (r === '2' && bestPrismatic))
+        .map((r) => {
+            let items = roundItems[r] || [];
+            if (r === '2' && bestPrismatic && !items.some((it) => it.item_id === bestPrismatic.item_id)) {
+                items = [bestPrismatic, ...items];
+            }
+            return `<div class="round-row"><div class="round-label">Round ${r}</div>${iconStripWithMore(items, { idKey: 'item_id', showPick: true, showTier: true }, 5)}</div>`;
+        }).join('');
 
     const fullBuild = meta.full_build || [];
     const fullBuildRow = fullBuild.length
