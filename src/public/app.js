@@ -1049,7 +1049,7 @@ function renderMetaModal() {
         if (items.length) {
             acc.push(`<div class="round-row"><div class="round-label">Round ${r}</div>${iconStripWithMore(items, { idKey: 'item_id', showPick: true, showTier: true }, 5)}</div>`);
         }
-        if (r === '2' && prismaticItems.length) {
+        if (r === '1' && prismaticItems.length) {
             acc.push(`<div class="round-row prismatic-row"><div class="round-label">Prismatic</div>${iconStripWithMore(prismaticItems, { idKey: 'item_id', showPick: true, showTier: true }, 5)}</div>`);
         }
         return acc;
