@@ -1050,14 +1050,7 @@ function renderMetaModal() {
 
     const fullBuild = meta.full_build || [];
     const fullBuildRow = fullBuild.length
-        ? `<div class="full-build">${fullBuild.map((it) => {
-            const name = it.name || `#${it.item_id}`;
-            const tip = JSON.stringify({
-                name: name, rarity: '', tier: '', desc: it.description || '',
-                descHtml: it.desc_html || '', price: it.price || 0, icon: it.icon || ''
-            });
-            return `<span class="fb-item" data-tip="${esc(tip)}">${iconImg(it.icon, name)}</span>`;
-        }).join('')}</div>`
+        ? iconStrip(fullBuild, { idKey: 'item_id', showPick: true, limit: 6 })
         : '<span class="meta-empty">No data</span>';
 
     const partners = (meta.partner_synergies || []).slice(0, 6).map((p) => (
@@ -1111,15 +1104,15 @@ function renderMetaModal() {
                     : '<span class="meta-empty">No data</span>')}
             </div>
             <div class="meta-col">
-                ${metaSection('Boots', iconStrip(meta.boots, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
-                ${metaSection('Items by Round', roundRows || '<span class="meta-empty">No data</span>', true)}
+                ${metaSection('Boots', iconStripWithMore(meta.boots, { idKey: 'item_id', showPick: true, showTier: true }, 5))}
                 ${metaSection('Full Build', fullBuildRow)}
+                ${metaSection('Items by Round', roundRows || '<span class="meta-empty">No data</span>', true)}
             </div>
         </div>
 
         ${metaSection('Best Prismatic Items', iconStrip(meta.prismatic_items, { idKey: 'item_id', showPick: true, showTier: true, limit: 8 }))}
 
-        ${metaSection('Late-Game Elixirs', iconStrip(meta.elixirs, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
+        ${metaSection('Late-Game Elixirs', iconStrip(meta.elixirs, { idKey: 'item_id', showPick: true, showTier: true, limit: 6 }))}
 
         ${metaSection('Best Partners', `<div class="meta-item-list">${partners}</div>`)}
     `;

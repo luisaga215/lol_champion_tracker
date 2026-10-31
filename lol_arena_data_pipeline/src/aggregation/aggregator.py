@@ -273,11 +273,13 @@ def build_prismatic_items(
 def build_full_build(
     rows: Sequence[Mapping[str, Any]], reference: ReferenceData
 ) -> list[dict[str, Any]]:
-    """Return the top non-boot final items (a representative full build)."""
+    """Return the top 6 final items by pick rate (includes boots; excludes trinkets)."""
     counts: Counter[int] = Counter()
     for row in rows:
         for item_id in _row_items(row):
-            if item_id == 0 or item_id in reference.boots or item_id in EXCLUDED_ROUND_ITEM_IDS:
+            if item_id == 0 or item_id in EXCLUDED_ROUND_ITEM_IDS:
+                continue
+            if "Trinket" in reference.item_categories(item_id):
                 continue
             counts[item_id] += 1
 
