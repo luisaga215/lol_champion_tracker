@@ -271,9 +271,11 @@ def build_prismatic_items(
 
 
 def build_full_build(
-    rows: Sequence[Mapping[str, Any]], reference: ReferenceData
+    rows: Sequence[Mapping[str, Any]],
+    purchases: Sequence[Mapping[str, Any]],
+    reference: ReferenceData,
 ) -> list[dict[str, Any]]:
-    """Return the top 6 final items by pick rate (includes boots; excludes trinkets)."""
+    """Return the top 6 final items ordered by typical acquisition time."""
     counts: Counter[int] = Counter()
     for row in rows:
         for item_id in _row_items(row):
@@ -283,9 +285,25 @@ def build_full_build(
                 continue
             counts[item_id] += 1
 
+    top_ids = [item_id for item_id, _ in counts.most_common(6)]
+
+    timestamps: dict[int, list[int]] = defaultdict(list)
+    for purchase in purchases:
+        item_id = int(purchase["item_id"])
+        if item_id in top_ids:
+            timestamps[item_id].append(int(purchase["timestamp"]))
+
+    def median_timestamp(item_id: int) -> int:
+        values = sorted(timestamps.get(item_id, []))
+        if not values:
+            return 2**31
+        return values[len(values) // 2]
+
+    ordered_ids = sorted(top_ids, key=median_timestamp)
+
     total = len(rows)
     result: list[dict[str, Any]] = []
-    for item_id, count in counts.most_common(6):
+    for item_id in ordered_ids:
         result.append(
             {
                 "item_id": item_id,
@@ -294,7 +312,7 @@ def build_full_build(
                 "desc_html": reference.item_description_html(item_id),
                 "icon": reference.item_icon(item_id),
                 "price": reference.item_price(item_id),
-                "pick_rate": round(count / total, 4) if total else 0.0,
+                "pick_rate": round(counts[item_id] / total, 4) if total else 0.0,
             }
         )
     return result
@@ -443,7 +461,7 @@ def build_champion_meta(
         augments_prismatic=prismatic,
         boots=_item_json(boots_counter, total, reference, boots_wins),
         prismatic_items=build_prismatic_items(rows, total, reference),
-        full_build=build_full_build(rows, reference),
+        full_build=build_full_build(rows, purchases, reference),
         round_items=build_round_items(purchases, placement_by_game, total, reference),
         elixirs=_item_json(elixir_counter, total, reference, elixir_wins),
         build_styles=build_build_styles(rows, purchases, reference),
