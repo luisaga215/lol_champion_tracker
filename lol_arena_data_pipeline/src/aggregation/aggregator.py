@@ -225,6 +225,8 @@ def build_round_items(
         item_id = int(purchase["item_id"])
         if item_id in EXCLUDED_ROUND_ITEM_IDS:
             continue
+        if item_id in reference.prismatic:
+            continue
         key = (purchase["match_id"], purchase["puuid"])
         counts[int(round_number)][item_id] += 1
         if placements.get(key) == WIN_PLACEMENT:

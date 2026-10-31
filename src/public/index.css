@@ -1418,6 +1418,7 @@ body {
 
 /* Round rows + subsections */
 .round-row { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.7rem; }
+.round-row.prismatic-row .round-label { color: #c78bff; }
 .round-label {
     font-size: 0.6rem;
     font-weight: 700;
