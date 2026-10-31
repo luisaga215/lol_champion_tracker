@@ -275,7 +275,7 @@ def build_full_build(
     purchases: Sequence[Mapping[str, Any]],
     reference: ReferenceData,
 ) -> list[dict[str, Any]]:
-    """Return the top 6 final items ordered by typical acquisition time."""
+    """Return a 6-item full build: 1 boots, 1 prismatic, then core by acquisition."""
     counts: Counter[int] = Counter()
     for row in rows:
         for item_id in _row_items(row):
@@ -285,25 +285,56 @@ def build_full_build(
                 continue
             counts[item_id] += 1
 
-    top_ids = [item_id for item_id, _ in counts.most_common(6)]
+    boot = max(
+        (item_id for item_id in counts if item_id in reference.boots),
+        key=counts.get,
+        default=None,
+    )
+    prismatic = max(
+        (item_id for item_id in counts if item_id in reference.prismatic),
+        key=counts.get,
+        default=None,
+    )
+
+    core = [
+        item_id
+        for item_id in sorted(counts, key=lambda value: -counts[value])
+        if item_id != boot
+        and item_id != prismatic
+        and item_id not in reference.boots
+        and item_id not in reference.prismatic
+    ]
+
+    selected: list[int] = []
+    if boot is not None:
+        selected.append(boot)
+    if prismatic is not None:
+        selected.append(prismatic)
+    selected.extend(core[: 6 - len(selected)])
 
     timestamps: dict[int, list[int]] = defaultdict(list)
     for purchase in purchases:
         item_id = int(purchase["item_id"])
-        if item_id in top_ids:
+        if item_id in selected:
             timestamps[item_id].append(int(purchase["timestamp"]))
 
     def median_timestamp(item_id: int) -> int:
         values = sorted(timestamps.get(item_id, []))
-        if not values:
-            return 2**31
-        return values[len(values) // 2]
+        return values[len(values) // 2] if values else 2**31
 
-    ordered_ids = sorted(top_ids, key=median_timestamp)
+    core_ids = [item_id for item_id in selected if item_id not in (boot, prismatic)]
+    core_ids.sort(key=median_timestamp)
+
+    ordered: list[int] = []
+    if boot is not None:
+        ordered.append(boot)
+    if prismatic is not None:
+        ordered.append(prismatic)
+    ordered.extend(core_ids)
 
     total = len(rows)
     result: list[dict[str, Any]] = []
-    for item_id in ordered_ids:
+    for item_id in ordered:
         result.append(
             {
                 "item_id": item_id,
