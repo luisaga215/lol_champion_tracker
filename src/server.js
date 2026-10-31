@@ -12,6 +12,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const DB_PATH = path.join(DATA_DIR, 'arena_tracker.db');
 const IMAGES_DIR = path.join(DATA_DIR, 'images', 'champion');
 const PORT = process.env.PORT || 3000;
+const ARENA_API_URL = process.env.ARENA_API_URL || 'http://arena-pipeline:8000';
 
 let db;
 
@@ -171,6 +172,31 @@ app.post('/api/champions/:id/status', (req, res) => {
 app.setDb = (databaseInstance) => {
   db = databaseInstance;
 };
+
+// Proxy Arena meta endpoints to the Python data pipeline (Docker networking).
+app.use('/api/arena', async (req, res) => {
+  try {
+    const upstream = await fetch(`${ARENA_API_URL}${req.originalUrl}`, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: (req.method === 'GET' || req.method === 'HEAD')
+        ? undefined
+        : JSON.stringify(req.body || {})
+    });
+
+    const body = await upstream.json().catch(() => null);
+    if (body === null) {
+      return res.status(upstream.status).json({ error: 'Arena pipeline returned no data' });
+    }
+    return res.status(upstream.status).json(body);
+  } catch (err) {
+    console.error('[Arena] Pipeline proxy error:', err.message);
+    return res.status(503).json({ error: 'Arena pipeline unavailable' });
+  }
+});
 
 // Initialize database and start listening (only if run directly, not in tests)
 if (require.main === module) {

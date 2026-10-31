@@ -45,6 +45,7 @@ async function initDatabase(dbPath, imagesDir) {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         image_name TEXT NOT NULL,
+        key TEXT,
         played INTEGER DEFAULT 0,
         top4 INTEGER DEFAULT 0,
         won INTEGER DEFAULT 0
@@ -59,6 +60,14 @@ async function initDatabase(dbPath, imagesDir) {
   // Ensure tags column exists (migration for existing databases)
   await new Promise((resolve) => {
     db.run(`ALTER TABLE champions ADD COLUMN tags TEXT`, (err) => {
+      // Ignore error if column already exists
+      resolve();
+    });
+  });
+
+  // Ensure key column exists (Riot numeric champion id, migration for existing databases)
+  await new Promise((resolve) => {
+    db.run(`ALTER TABLE champions ADD COLUMN key TEXT`, (err) => {
       // Ignore error if column already exists
       resolve();
     });
@@ -126,11 +135,12 @@ async function initDatabase(dbPath, imagesDir) {
     const champId = champ.id;
     const champName = champ.name;
     const imageName = champ.image.full;
+    const champKey = String(champ.key);
     const localImagePath = path.join(imagesDir, imageName);
 
-    // 1. Insert into database if not exists (checking existing tags as well)
+    // 1. Insert into database if not exists (checking existing key/tags as well)
     const existing = await new Promise((resolve, reject) => {
-      db.get('SELECT tags FROM champions WHERE id = ?', [champId], (err, row) => {
+      db.get('SELECT key, tags FROM champions WHERE id = ?', [champId], (err, row) => {
         if (err) reject(err);
         else resolve(row);
       });
@@ -141,8 +151,8 @@ async function initDatabase(dbPath, imagesDir) {
     if (!existing) {
       await new Promise((resolve, reject) => {
         db.run(
-          'INSERT INTO champions (id, name, image_name, played, top4, won, tags) VALUES (?, ?, ?, 0, 0, 0, ?)',
-          [champId, champName, imageName, tagsStr],
+          'INSERT INTO champions (id, name, image_name, key, played, top4, won, tags) VALUES (?, ?, ?, ?, 0, 0, 0, ?)',
+          [champId, champName, imageName, champKey, tagsStr],
           (err) => {
             if (err) reject(err);
             else {
@@ -152,18 +162,22 @@ async function initDatabase(dbPath, imagesDir) {
           }
         );
       });
-    } else if (existing.tags === null || existing.tags === undefined || existing.tags === '') {
-      // If champion exists but tags are not populated, update them
-      await new Promise((resolve, reject) => {
-        db.run(
-          'UPDATE champions SET tags = ? WHERE id = ?',
-          [tagsStr, champId],
-          (err) => {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
+    } else {
+      // If champion exists but key/tags are not populated, backfill them
+      const needsKey = existing.key === null || existing.key === undefined || existing.key === '';
+      const needsTags = existing.tags === null || existing.tags === undefined || existing.tags === '';
+      if (needsKey || needsTags) {
+        await new Promise((resolve, reject) => {
+          db.run(
+            'UPDATE champions SET key = ?, tags = ? WHERE id = ?',
+            [champKey, tagsStr, champId],
+            (err) => {
+              if (err) reject(err);
+              else resolve();
+            }
+          );
+        });
+      }
     }
 
     // 2. Download portrait image if not exists

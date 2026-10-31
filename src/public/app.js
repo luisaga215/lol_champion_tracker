@@ -5,6 +5,8 @@ let searchQuery = '';
 let currentFilter = 'all';
 let currentRole = 'all';
 let currentSort = 'name-asc';
+let arenaMeta = {};
+let latestPatch = null;
 
 // DOM Elements
 const searchInput = document.getElementById('search-input');
@@ -32,6 +34,8 @@ const barWon = document.getElementById('bar-won');
 // Initialize App
 window.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    setupMetaModal();
+    setupTooltip();
     initPingTester();
     fetchData();
 });
@@ -103,6 +107,8 @@ async function fetchData() {
 
         champions = await champsRes.json();
         stats = await statsRes.json();
+        arenaMeta = await fetchArenaMeta();
+        await fetchBuildStyles();
 
         renderStats();
         renderGrid();
@@ -120,6 +126,40 @@ async function fetchData() {
         if (loadingState) {
             loadingState.style.display = 'none';
         }
+    }
+}
+
+// Fetch arena meta for the latest patch and index it by numeric champion id.
+async function fetchArenaMeta() {
+    try {
+        const patchesRes = await fetch('/api/arena/patches');
+        if (!patchesRes.ok) return {};
+        const patches = await patchesRes.json();
+        if (!Array.isArray(patches) || patches.length === 0) return {};
+        const latest = patches[0];
+        latestPatch = latest;
+        updatePatchBadge(latest);
+
+        const metaRes = await fetch(`/api/arena/meta?patch=${encodeURIComponent(latest)}`);
+        if (!metaRes.ok) return {};
+
+        const list = await metaRes.json();
+        const map = {};
+        for (const meta of list) {
+            map[String(meta.champion_id)] = meta;
+        }
+        return map;
+    } catch (err) {
+        return {};
+    }
+}
+
+function updatePatchBadge(latest) {
+    const badge = document.getElementById('patch-badge');
+    const value = document.getElementById('patch-badge-value');
+    if (badge && latest) {
+        badge.hidden = false;
+        if (value) value.textContent = latest;
     }
 }
 
@@ -347,21 +387,21 @@ function renderGrid() {
         if (!champ.played) card.classList.add('unplayed');
         if (champ.won) card.classList.add('won-champion');
 
-        // Portrait Container
+        // Portrait Container (click opens the Arena meta modal)
         const portraitCont = document.createElement('div');
         portraitCont.className = 'portrait-container';
-        
-        const link = document.createElement('a');
-        const slug = ({'Nunu & Willump': 'nunu', 'Jarvan IV': 'jarvan'})[champ.name] || champ.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
-        link.href = `https://www.metasrc.com/lol/arena/champions/${slug}/build`;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
+
         const img = document.createElement('img');
         img.src = `/images/champion/${champ.image_name}`;
         img.alt = champ.name;
         img.loading = 'lazy';
-        link.appendChild(img);
-        portraitCont.appendChild(link);
+        img.className = 'portrait-img';
+        img.addEventListener('click', () => {
+            const m = arenaMeta[String(champ.key)] || emptyMeta('Recommended');
+            if (!m.patch_version) m.patch_version = latestPatch || '';
+            openMetaModal(champ, m);
+        });
+        portraitCont.appendChild(img);
 
         // Add Crown overlay if Won
         if (champ.won) {
@@ -380,11 +420,27 @@ function renderGrid() {
         // Info / Name
         const info = document.createElement('div');
         info.className = 'champ-info';
-        
+
         const nameSpan = document.createElement('span');
         nameSpan.className = 'champ-name';
         nameSpan.textContent = champ.name;
         info.appendChild(nameSpan);
+
+        // Arena tier badge -> Metasrc build link
+        const meta = arenaMeta[String(champ.key)];
+        if (meta) {
+            const slug = ({'Nunu & Willump': 'nunu', 'Jarvan IV': 'jarvan'})[champ.name]
+                || champ.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+            const badge = document.createElement('a');
+            badge.className = `meta-tier-badge ${tierClass(meta.tier_rank)}`;
+            badge.textContent = meta.tier_rank;
+            badge.href = `https://www.metasrc.com/lol/arena/champions/${slug}/build`;
+            badge.target = '_blank';
+            badge.rel = 'noopener noreferrer';
+            badge.title = 'Open Metasrc build';
+            badge.addEventListener('click', (e) => e.stopPropagation());
+            info.appendChild(badge);
+        }
 
         card.appendChild(info);
 
@@ -635,4 +691,416 @@ function applyPingError(regionName) {
     pingWidget.className = 'ping-widget quality-poor';
     pingValue.textContent = 'Offline';
     pingWidget.title = `Could not reach ${regionName} server. Click to retry.`;
+}
+
+// ==========================================
+// Arena Meta Modal
+// ==========================================
+const BUILD_STYLES = [
+    'Recommended', 'AD', 'Crit', 'MS', 'CDR', 'HP', 'On-Hit',
+    'Lethality', 'MR', 'AP', 'AR', 'LS', 'Mana', 'SV'
+];
+
+let buildStyleList = [];
+
+const modalState = {
+    champion: null,
+    patch: null,
+    styles: [],
+    currentStyle: 'Recommended',
+    meta: null
+};
+
+function setupMetaModal() {
+    const modal = document.getElementById('meta-modal');
+    const closeBtn = document.getElementById('meta-modal-close');
+    if (!modal || !closeBtn) return;
+
+    closeBtn.addEventListener('click', closeMetaModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeMetaModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMetaModal();
+    });
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('style-menu');
+        if (menu && !menu.hidden && !e.target.closest('.style-dropdown')) menu.hidden = true;
+    });
+}
+
+async function fetchBuildStyles() {
+    try {
+        const res = await fetch('/api/arena/build-styles');
+        if (res.ok) buildStyleList = await res.json();
+    } catch (err) { /* pipeline unavailable */ }
+}
+
+function styleIcon(style) {
+    const found = buildStyleList.find((s) => s.build_style === style);
+    return found ? found.icon : '';
+}
+
+function toggleStyleMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('style-menu');
+    if (menu) menu.hidden = !menu.hidden;
+}
+
+async function openMetaModal(champ, meta) {
+    modalState.champion = champ;
+    modalState.patch = meta.patch_version;
+    modalState.currentStyle = meta.build_style || 'Recommended';
+    modalState.meta = meta;
+    modalState.styles = [];
+
+    const modal = document.getElementById('meta-modal');
+    modal.hidden = false;
+    renderMetaModal();
+
+    const key = encodeURIComponent(champ.key);
+    try {
+        const res = await fetch(`/api/arena/meta/${key}/styles?patch=${encodeURIComponent(meta.patch_version)}`);
+        if (res.ok) {
+            modalState.styles = await res.json();
+            renderMetaModal();
+        }
+    } catch (err) { /* pipeline unavailable; keep default */ }
+}
+
+async function changeStyle(style) {
+    modalState.currentStyle = style;
+    const menu = document.getElementById('style-menu');
+    if (menu) menu.hidden = true;
+    renderMetaModal();
+    const key = encodeURIComponent(modalState.champion.key);
+    const patch = encodeURIComponent(modalState.patch);
+    try {
+        const res = await fetch(`/api/arena/meta/${key}?patch=${patch}&build_style=${encodeURIComponent(style)}`);
+        if (res.ok) {
+            modalState.meta = await res.json();
+        } else {
+            modalState.meta = emptyMeta(style);
+        }
+    } catch (err) {
+        modalState.meta = emptyMeta(style);
+    }
+    renderMetaModal();
+}
+
+function emptyMeta(style) {
+    return {
+        champion_id: modalState.champion ? modalState.champion.key : 0,
+        champion_name: modalState.champion ? modalState.champion.name : '',
+        patch_version: modalState.patch,
+        build_style: style,
+        total_games: 0, win_count: 0, top4_count: 0, win_rate: 0, top4_rate: 0,
+        avg_placement: 0, tier_rank: '-', skill_priority: '', skill_progression: null,
+        skill_order_distribution: [], augments_overall: [], augments_silver: [],
+        augments_gold: [], augments_prismatic: [], boots: [], prismatic_items: [],
+        round_items: {}, elixirs: [], build_styles: [], partner_synergies: []
+    };
+}
+
+function closeMetaModal() {
+    const modal = document.getElementById('meta-modal');
+    if (modal) modal.hidden = true;
+}
+
+function tierClass(tier) {
+    return 'tier-' + String(tier || '').replace('+', 'plus');
+}
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
+function pct(v) {
+    return `${Math.round((v || 0) * 100)}%`;
+}
+
+function iconImg(url, name, rarity) {
+    const rar = rarity ? `rarity-${rarity}` : '';
+    const inner = url
+        ? `<img class="icon-img" src="${esc(url)}" alt="${esc(name || '')}" loading="lazy">`
+        : `<div class="icon-ph">${esc((name || '?').charAt(0))}</div>`;
+    return `<div class="icon-avatar ${rar}">${inner}</div>`;
+}
+
+function colorSkillLetters(str) {
+    return String(str || '').replace(/[QWER]/g, (m) => (
+        `<span class="skill-letter skill-${m}">${m}</span>`
+    ));
+}
+
+function iconCard(entry, opts) {
+    const name = entry.name || `#${entry[opts.idKey]}`;
+    const tierVal = opts.showTier ? (entry.performance_tier || entry.tier) : null;
+    const tipData = JSON.stringify({
+        name: name,
+        rarity: entry.tier || '',
+        tier: tierVal || '',
+        desc: entry.description || '',
+        descHtml: entry.desc_html || '',
+        price: entry.price || 0,
+        icon: entry.icon || ''
+    });
+    const parts = [];
+    if (opts.showPick && entry.pick_rate != null) parts.push(`Pick ${pct(entry.pick_rate)}`);
+    if (opts.showGames && entry.count != null) {
+        parts.push(`${entry.count} game${entry.count === 1 ? '' : 's'}`);
+    }
+    return `<div class="icon-card" data-tip="${esc(tipData)}">
+        ${iconImg(entry.icon, name, entry.tier)}
+        <div class="icon-name">${esc(name)}</div>
+        ${tierVal ? `<div class="icon-tier ${tierClass(tierVal)}">${esc(tierVal)}</div>` : ''}
+        ${parts.length ? `<div class="icon-meta">${parts.join(' · ')}</div>` : ''}
+    </div>`;
+}
+
+function iconStrip(entries, opts) {
+    if (!entries || entries.length === 0) return '<span class="meta-empty">No data</span>';
+    const cards = entries.slice(0, opts.limit || 10).map((e) => iconCard(e, opts)).join('');
+    return `<div class="icon-grid">${cards}</div>`;
+}
+
+function metaSection(title, content, collapsed = false) {
+    return `<div class="meta-section${collapsed ? ' collapsed' : ''}">
+        <button type="button" class="meta-section-header" onclick="toggleSection(this)">
+            <h3>${esc(title)}</h3>
+            <span class="toggle-arrow">&#9662;</span>
+        </button>
+        <div class="meta-section-body">${content}</div>
+    </div>`;
+}
+
+function toggleSection(btn) {
+    const section = btn.closest('.meta-section');
+    if (section) section.classList.toggle('collapsed');
+}
+
+function setupTooltip() {
+    const tooltip = document.getElementById('meta-tooltip');
+    if (!tooltip) return;
+    document.addEventListener('mouseover', (e) => {
+        const el = e.target.closest('[data-tip]');
+        if (!el) return;
+        let data;
+        try { data = JSON.parse(el.getAttribute('data-tip')); } catch (err) { return; }
+        tooltip.innerHTML = renderTooltip(data);
+        tooltip.hidden = false;
+        positionTooltip(tooltip, el);
+    });
+    document.addEventListener('mouseout', (e) => {
+        const el = e.target.closest('[data-tip]');
+        if (!el) return;
+        tooltip.hidden = true;
+    });
+}
+
+const RICH_TAG_CLASS = {
+    stats: 'kw-stats',
+    attention: 'kw-attention',
+    passive: 'kw-passive',
+    keyword: 'kw-keyword',
+    magicdamage: 'kw-magic',
+    physicaldamage: 'kw-physical',
+    truedamage: 'kw-true',
+    healing: 'kw-heal',
+    shield: 'kw-shield',
+    speed: 'kw-speed',
+    scaleap: 'kw-ap',
+    scalead: 'kw-ad',
+    scalehealth: 'kw-health',
+    scaleas: 'kw-as',
+    scalecrit: 'kw-crit',
+    scalemana: 'kw-mana',
+    scalemr: 'kw-mr',
+    scalearmor: 'kw-armor',
+    spellname: 'kw-passive',
+    spellmodifier: 'kw-keyword',
+    status: 'kw-keyword'
+};
+
+function richDesc(html) {
+    if (!html) return '';
+    let s = String(html).replace(/<\/?mainText>/gi, '');
+    s = s.replace(/@[\w]+@/g, '…');
+    s = s.replace(/<(\/?)([a-zA-Z][\w]*)[^>]*>/g, (m, close, tag) => {
+        const t = tag.toLowerCase();
+        if (t === 'br') return '<br>';
+        if (t === 'li') return close ? '' : '<br>• ';
+        let cls;
+        if (RICH_TAG_CLASS[t]) cls = RICH_TAG_CLASS[t];
+        else if (t.startsWith('scale')) cls = 'kw-keyword';
+        else cls = 'kw-' + t;
+        return close ? '</span>' : `<span class="${cls}">`;
+    });
+    return `<div class="tt-desc rich">${s}</div>`;
+}
+
+function renderTooltip(data) {
+    const rar = data.rarity ? `rarity-${esc(data.rarity)}` : '';
+    const icon = data.icon
+        ? `<div class="icon-avatar ${rar}"><img class="icon-img" src="${esc(data.icon)}" alt=""></div>`
+        : '';
+    const price = data.price
+        ? `<div class="tt-price"><span class="gold-dot"></span>${data.price}</div>`
+        : '';
+    let body = '';
+    if (data.descHtml) {
+        body = richDesc(data.descHtml);
+    } else if (data.desc) {
+        const plain = String(data.desc).replace(/@\w+@/g, '…').trim();
+        body = `<div class="tt-desc">${esc(plain)}</div>`;
+    }
+    return `
+        <div class="tt-head">
+            ${icon}
+            <div class="tt-headtext">
+                <div class="tt-name">${esc(data.name)}</div>
+                ${price}
+                ${data.tier ? `<div class="tt-tier">Tier: ${esc(data.tier)}</div>` : ''}
+            </div>
+        </div>
+        ${body}
+    `;
+}
+
+function positionTooltip(tooltip, el) {
+    const rect = el.getBoundingClientRect();
+    tooltip.style.left = '0px';
+    tooltip.style.top = '0px';
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    let left = rect.left + rect.width / 2 - tw / 2;
+    let top = rect.top - th - 10;
+    if (top < 8) top = rect.bottom + 10;
+    left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+    tooltip.style.left = Math.round(left) + 'px';
+    tooltip.style.top = Math.round(top) + 'px';
+}
+
+function renderMetaModal() {
+    const content = document.getElementById('meta-modal-content');
+    const champ = modalState.champion;
+    const meta = modalState.meta;
+    if (!content || !champ || !meta) return;
+
+    const tier = meta.tier_rank || '-';
+    const styleCounts = {};
+    const styleIcons = {};
+    for (const s of modalState.styles) {
+        styleCounts[s.build_style] = s.total_games;
+        styleIcons[s.build_style] = s.icon || '';
+    }
+    // Prefer the champion's own item icon for a style, fall back to the archetype icon.
+    const iconFor = (style) => styleIcons[style] || styleIcon(style);
+
+    const styleNames = buildStyleList.length
+        ? buildStyleList.map((s) => s.build_style)
+        : BUILD_STYLES;
+    const currentIcon = iconFor(modalState.currentStyle);
+    const options = styleNames.map((s) => {
+        const count = styleCounts[s] != null ? styleCounts[s] : 0;
+        const active = s === modalState.currentStyle ? ' active' : '';
+        return `<button type="button" class="style-option${active}" onclick="changeStyle('${esc(s)}')">
+            ${iconImg(iconFor(s), s)}
+            <span class="style-option-name">${esc(s)}</span>
+            ${count > 0 ? `<span class="style-option-count">${count}</span>` : ''}
+        </button>`;
+    }).join('');
+
+    const augSection = (title, entries) => {
+        if (!entries || entries.length === 0) return '';
+        return `<div class="meta-subsection"><h4>${title}</h4>${iconStrip(entries, { idKey: 'augment_id', showPick: true, showTier: true, limit: 6 })}</div>`;
+    };
+
+    const roundKeys = ['1', '2', '4', '6', '9', '11'];
+    const roundItems = meta.round_items || {};
+    const roundRows = roundKeys
+        .filter((r) => roundItems[r] && roundItems[r].length)
+        .map((r) => (
+            `<div class="round-row"><div class="round-label">Round ${r}</div>${iconStrip(roundItems[r], { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 })}</div>`
+        )).join('');
+
+    const partners = (meta.partner_synergies || []).slice(0, 6).map((p) => (
+        `<span class="meta-item-chip">${esc(p.champion_name || ('#' + p.champion_id))} <span class="rate">${p.games}G / ${pct(p.win_rate)}</span></span>`
+    )).join('') || '<span class="meta-empty">No data</span>';
+
+    const skillDist = (meta.skill_order_distribution || []).slice(0, 5).map((d) => (
+        `<span class="meta-pill"><span class="rate">${pct(d.pick_rate)}</span> ${esc(d.order)}</span>`
+    )).join('');
+
+    const hasAugments = meta.augments_overall && meta.augments_overall.length > 0;
+
+    content.innerHTML = `
+        <div class="meta-modal-header">
+            <span class="meta-tier-badge ${tierClass(tier)}">${esc(tier)}</span>
+            <h2 id="meta-modal-title">${esc(champ.name)}</h2>
+        </div>
+
+        <label class="style-label">Build Type</label>
+        <div class="style-dropdown">
+            <button type="button" class="style-btn" onclick="toggleStyleMenu(event)">
+                ${iconImg(currentIcon, modalState.currentStyle)}
+                <span class="style-btn-name">${esc(modalState.currentStyle)}</span>
+                <span class="caret">&#9662;</span>
+            </button>
+            <div class="style-menu" id="style-menu" hidden>${options}</div>
+        </div>
+
+        <div class="meta-stats">
+            <div class="meta-stat"><div class="value">${meta.total_games ?? 0}</div><div class="label">Games</div></div>
+            <div class="meta-stat"><div class="value">${pct(meta.win_rate)}</div><div class="label">Win Rate</div></div>
+            <div class="meta-stat"><div class="value">${pct(meta.top4_rate)}</div><div class="label">Top 4</div></div>
+            <div class="meta-stat"><div class="value">${meta.avg_placement ?? '-'}</div><div class="label">Avg Place</div></div>
+        </div>
+
+        <div class="meta-columns">
+        ${metaSection('Skill Order', `
+            <div class="meta-tagline">
+                <span class="meta-pill big">${colorSkillLetters(esc(meta.skill_priority || '-'))}</span>
+                ${skillDist}
+            </div>
+            ${renderSkillMatrix(meta.skill_progression)}
+        `)}
+
+        ${metaSection('Augments', hasAugments
+            ? `${augSection('Overall', meta.augments_overall)}
+               ${augSection('Silver', meta.augments_silver)}
+               ${augSection('Gold', meta.augments_gold)}
+               ${augSection('Prismatic', meta.augments_prismatic)}`
+            : '<span class="meta-empty">No data</span>')}
+
+        ${metaSection('Boots', iconStrip(meta.boots, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
+
+        ${metaSection('Items by Round', roundRows || '<span class="meta-empty">No data</span>')}
+
+        ${metaSection('Best Prismatic Items', iconStrip(meta.prismatic_items, { idKey: 'item_id', showPick: true, showTier: true, limit: 8 }))}
+
+        ${metaSection('Late-Game Elixirs', iconStrip(meta.elixirs, { idKey: 'item_id', showPick: true, showGames: true, showTier: true, limit: 6 }))}
+
+        ${metaSection('Best Partners', `<div class="meta-item-list">${partners}</div>`)}
+        </div>
+    `;
+}
+
+function renderSkillMatrix(progression) {
+    if (!progression) return '<span class="meta-empty">No data</span>';
+    const letters = progression.split('').slice(0, 17);
+    let html = '<div class="meta-skill-grid">';
+    html += '<div class="meta-skill-cell head">Lv</div>';
+    for (let i = 1; i <= 18; i++) html += `<div class="meta-skill-cell head">${i}</div>`;
+    html += '</div><div class="meta-skill-grid">';
+    html += '<div class="meta-skill-cell head">Skill</div>';
+    html += '<div class="meta-skill-cell">-</div>';
+    for (let i = 0; i < 17; i++) {
+        const letter = letters[i] || '';
+        html += `<div class="meta-skill-cell skill-${esc(letter)}">${esc(letter)}</div>`;
+    }
+    html += '</div>';
+    return html;
 }

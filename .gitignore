@@ -8,6 +8,14 @@ data/
 .env
 .env.local
 
+# Python (lol_arena_data_pipeline)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+*.egg-info/
+
 # OS files
 .DS_Store
 Thumbs.db

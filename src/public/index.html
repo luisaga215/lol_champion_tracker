@@ -16,6 +16,10 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-top-actions">
+                <div class="patch-badge" id="patch-badge" title="Current Arena patch" hidden>
+                    <span class="patch-badge-label">PATCH</span>
+                    <span class="patch-badge-value" id="patch-badge-value">--</span>
+                </div>
                 <div class="ping-widget" id="ping-widget" title="League of Legends Server Latency">
                     <div class="ping-icon-wrap">
                         <svg class="ping-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -165,6 +169,22 @@
             <p class="copyright">&copy; 2026 Arena Tracker. League of Legends champion data and images are property of Riot Games.</p>
         </footer>
     </div>
+
+    <!-- Arena Meta Modal -->
+    <div class="meta-modal-overlay" id="meta-modal" hidden>
+        <div class="meta-modal" role="dialog" aria-modal="true" aria-labelledby="meta-modal-title">
+            <button class="meta-modal-close" id="meta-modal-close" title="Close" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="meta-modal-content" id="meta-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Hover tooltip -->
+    <div class="meta-tooltip" id="meta-tooltip" hidden></div>
 
     <script src="app.js"></script>
 </body>

@@ -7,11 +7,34 @@ services:
     container_name: lol-arena-tracker
     ports:
       - "3000:3000"
+    environment:
+      ARENA_API_URL: http://arena-pipeline:8000
     volumes:
       - arena-data:/app/data
       - ./src:/app/src
+    restart: unless-stopped
+    depends_on:
+      - arena-pipeline
+
+  # Python Arena meta data pipeline & microservice API.
+  # Reachable from the Node app over the compose network as `arena-pipeline:8000`.
+  arena-pipeline:
+    build: ./lol_arena_data_pipeline
+    container_name: lol-arena-pipeline
+    ports:
+      - "8000:8000"
+    environment:
+      RIOT_API_KEY: ${RIOT_API_KEY:-}
+      DATABASE_PATH: /app/data/arena_pipeline.db
+      SCHEDULER_ENABLED: "true"
+      CRAWLER_INTERVAL_SECONDS: ${CRAWLER_INTERVAL_SECONDS:-900}
+      CRAWLER_SEED_PUUIDS: ${CRAWLER_SEED_PUUIDS:-[]}
+    volumes:
+      - arena-pipeline-data:/app/data
     restart: unless-stopped
 
 volumes:
   arena-data:
     name: lol-arena-data
+  arena-pipeline-data:
+    name: lol-arena-pipeline-data
